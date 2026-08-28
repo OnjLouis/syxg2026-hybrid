@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S-YXG2026 Hybrid - User Guide</title>
+  <style>
+    body {
+      max-width: 54rem;
+      margin: 0 auto;
+      padding: 1.5rem;
+      color: #171717;
+      background: #ffffff;
+      font: 1rem/1.6 system-ui, sans-serif;
+    }
+    h1, h2 { line-height: 1.25; }
+    code, pre { font-family: ui-monospace, monospace; }
+    pre {
+      padding: 1rem;
+      overflow-x: auto;
+      border: 1px solid #767676;
+      background: #f5f5f5;
+    }
+    .important {
+      padding: 0.75rem 1rem;
+      border-left: 0.3rem solid #9c2f00;
+      background: #fff4ee;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>S-YXG2026 Hybrid</h1>
+
+  <p>S-YXG2026 Hybrid is an experimental 32-bit VST2 instrument assembled for
+  software-synth preservation research. It combines three generations of
+  discontinued Yamaha technology in one real-time instrument:</p>
+
+  <ul>
+    <li>S-YXG2006LE supplies its newer PCM voices.</li>
+    <li>S-YXG50 supplies missing full-XG voices and the common Yamaha reverb,
+    chorus, and variation effects processor.</li>
+    <li>Recovered S-YXG100 VL/PVL physical modelling and SG singing synthesis
+    remain available for compatible MIDI files.</li>
+  </ul>
+
+  <p>This is a deeper hybrid than simply switching between complete plugins.
+  Sixteen isolated S-YXG2006LE instances provide one dry source per MIDI part.
+  Their built-in reverb and chorus are held at zero. The wrapper derives dry,
+  reverb-send, chorus-send, and variation-send buses for every part and inserts
+  those buses into S-YXG50 before its effects stage. VL/PVL and SG use the same
+  recovered S-YXG50 effects bridge.</p>
+
+  <h2>Current status</h2>
+
+  <p>This build is a private test candidate, not a finished public release.
+  The following behaviours have passed automated or measured host tests:</p>
+
+  <ul>
+    <li>All sixteen S-YXG2006LE instances are independent and operate faster
+    than real time together on the development system.</li>
+    <li>Voices present in S-YXG2006LE are selected from its bank table.</li>
+    <li>Missing S-YXG2006LE bank/program slots fall back to S-YXG50.</li>
+    <li>CC91, CC93, and CC94 change S-YXG50 reverb, chorus, and variation output
+    while the source S-YXG2006LE instances remain dry.</li>
+    <li>VL/PVL and SG continue to coexist with the two PCM sources.</li>
+    <li>An SG-only replay is sample-identical to the accepted S-YXG100 Hybrid,
+    proving that SG notes are not doubled by S-YXG2006LE.</li>
+    <li>44.1 and 48 kHz host rendering pass the current probes.</li>
+    <li>Two simultaneous plugin instances render independently.</li>
+  </ul>
+
+  <div class="important">
+    <p><strong>Experimental limitation:</strong> ordinary bank, program,
+    controller, pressure, pitch-bend, and note messages are mirrored into the
+    relevant S-YXG2006LE part. Arbitrary SysEx is not sent directly to the
+    original 2006LE VST because its isolated SysEx entry path faults. S-YXG50,
+    VL/PVL, and SG still receive their established SysEx paths. MIDI files that
+    configure unusual 2006LE part state exclusively through SysEx need further
+    testing and may require explicit translation in the wrapper.</p>
+  </div>
+
+  <h2>Real-time use</h2>
+
+  <p>Load <code>syxg2026-hybrid.dll</code> in a 32-bit VST2 host, or a host
+  with a suitable 32-bit bridge. Its product name is
+  <strong>S-YXG2026 Hybrid</strong> and its VST ID is <code>S2HY</code>, so it
+  can coexist with S-YXG50, S-YXG2006LE, and S-YXG100 Hybrid.</p>
+
+  <p>Foobar2000 with the MIDI Player component can load it through that
+  component's VST bridge. Select the new product name explicitly; do not
+  replace the established S-YXG100 Hybrid while this candidate is being
+  evaluated.</p>
+
+  <h2>Runtime files</h2>
+
+  <p>Keep these files together in one runtime directory:</p>
+
+  <pre>syxg2026-hybrid.dll
+syxg2026-vl-worker.exe
+syxg2026-sg-worker.exe
+syxg50-engine.bin
+syxg2006le-engine.bin
+sxgbnw6l.tbl
+sxgdat6l.tbl
+Sxgpvknl.vxd
+sxgsgknl.vxd</pre>
+
+  <p>The first three files are produced by this project. The other six are
+  original Yamaha runtime files and are not distributed by the source project.
+  A tester must provide them from software they are entitled to use. The
+  compatible S-YXG50 and S-YXG2006LE VST binaries retain DLL contents but use
+  <code>.bin</code> names so a host does not list the private child engines as
+  additional selectable instruments.</p>
+
+  <h2>Voice selection</h2>
+
+  <p>The wrapper reads S-YXG2006LE's own compact bank map. A defined slot is
+  rendered by the newer source engine. An undefined slot remains on S-YXG50,
+  retaining voices omitted by the XG Lite product. Bank-select MSBs 33, 81,
+  and 97 continue to activate VL/PVL. Yamaha model <code>0x5D</code> SysEx
+  activates SG.</p>
+
+  <p>Note releases are sent conservatively across PCM ownership transitions.
+  This prevents a note started before a bank change from becoming stuck, while
+  note-ons still have only one PCM owner. SG-owned note-ons bypass both PCM
+  sources and retain the accepted SG output path.</p>
+
+  <h2>Reporting a problem</h2>
+
+  <p>Include the MIDI filename, host and version, sample rate, approximate
+  playback position, and the selected sound or bank. Listen for wrong fallback
+  voices, doubled notes, stuck releases, missing controllers, unusual effects,
+  VL/PVL or SG regressions, and differences between 44.1 and 48 kHz. A short
+  reproducible MIDI file is more useful than a rendered recording alone.</p>
+
+  <h2>Redistribution</h2>
+
+  <p>The project source does not distribute Yamaha binaries, tables, songs, or
+  firmware. Do not publish a private test runtime containing those files
+  without the necessary rights. The integration code is available under the
+  MIT License.</p>
+</main>
+</body>
+</html>

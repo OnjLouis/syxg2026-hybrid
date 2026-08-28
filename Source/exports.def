@@ -1,0 +1,4 @@
+LIBRARY "syxg2026-hybrid"
+EXPORTS
+    main=VSTPluginMain
+    VSTPluginMain
