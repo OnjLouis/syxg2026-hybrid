@@ -32,7 +32,8 @@ public:
     // Releases are queued here but also reach S-YXG50, preventing stuck notes
     // when overlapping notes span a 2006LE/fallback voice transition.
     bool queueShort(std::uint32_t packedMessage, std::int32_t deltaFrames);
-    void observeSysex(std::span<const std::uint8_t> sysex) noexcept;
+    void observeSysex(std::span<const std::uint8_t> sysex,
+                      std::int32_t deltaFrames);
 
     void render(std::int32_t frames, std::span<float> buses,
                 std::size_t busStride);

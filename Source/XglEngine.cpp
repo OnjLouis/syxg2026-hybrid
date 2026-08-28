@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -17,7 +18,13 @@ namespace hybrid {
 namespace {
 
 constexpr std::size_t maxEventsPerPart = 4096;
+constexpr std::uint8_t defaultVolume = 100;
+constexpr std::uint8_t centerPan = 64;
+constexpr std::uint8_t maximumControllerValue = 127;
 constexpr std::uint8_t defaultReverbSend = 40;
+// S-YXG2006LE applies constant-power centre attenuation before exposing its
+// stereo output. S-YXG50 insertion effects receive the source before pan.
+constexpr float insertionPrePanGain = 1.41421356237f;
 
 constexpr std::uint8_t statusByte(std::uint32_t message) noexcept
 {
@@ -80,6 +87,9 @@ struct PartState {
     std::uint8_t bankMsb {};
     std::uint8_t bankLsb {};
     std::uint8_t program {};
+    std::uint8_t volume { defaultVolume };
+    std::uint8_t pan { centerPan };
+    std::uint8_t expression { maximumControllerValue };
     std::uint8_t reverbSend { defaultReverbSend };
     std::uint8_t chorusSend {};
     std::uint8_t variationSend {};
@@ -156,6 +166,9 @@ public:
             part.bankMsb = 0;
             part.bankLsb = 0;
             part.program = 0;
+            part.volume = defaultVolume;
+            part.pan = centerPan;
+            part.expression = maximumControllerValue;
             part.reverbSend = defaultReverbSend;
             part.chorusSend = 0;
             part.variationSend = 0;
@@ -166,15 +179,27 @@ public:
             queue(part, 0x00005bb0u, 0);
             queue(part, 0x00005db0u, 0);
             queue(part, 0x00005eb0u, 0);
+            queueController(part, 7, defaultVolume, 0);
+            queueController(part, 10, centerPan, 0);
+            queueController(part, 11, maximumControllerValue, 0);
             queue(part, 0x000000b0u, 0);
             queue(part, 0x000020b0u, 0);
             queue(part, 0x000000c0u, 0);
         }
     }
 
-    void observeSysex(std::span<const std::uint8_t> sysex) noexcept
+    void observeSysex(std::span<const std::uint8_t> sysex,
+                      std::int32_t deltaFrames)
     {
+        const auto previousPart = activeInsertionPart();
         variationRouting.observe(sysex);
+        const auto currentPart = activeInsertionPart();
+        if (previousPart == currentPart)
+            return;
+        if (previousPart)
+            restorePartMix(parts[*previousPart], deltaFrames);
+        if (currentPart)
+            prepareInsertionInput(parts[*currentPart], deltaFrames);
     }
 
     bool queueShort(std::uint32_t message, std::int32_t deltaFrames)
@@ -192,7 +217,26 @@ public:
         else if (op == 0xc0)
             part.program = first;
 
+        if (op == 0xb0 && first == 7)
+            part.volume = second;
+        else if (op == 0xb0 && first == 10)
+            part.pan = second;
+        else if (op == 0xb0 && first == 11)
+            part.expression = second;
+        else if (op == 0xb0 && first == 121)
+            part.expression = maximumControllerValue;
+
         auto remapped = remapToPartZero(message);
+        if (op == 0xb0 && first == 121
+            && variationRouting.isInsertionPart(partIndex)) {
+            queue(part, remapped, deltaFrames);
+            prepareInsertionInput(part, deltaFrames);
+            return false;
+        }
+        if (op == 0xb0 && (first == 7 || first == 10 || first == 11)
+            && variationRouting.isInsertionPart(partIndex)) {
+            return false;
+        }
         if (op == 0xb0 && first == 91) {
             part.reverbSend = second;
             remapped &= 0x0000ffffu;
@@ -253,6 +297,40 @@ public:
     }
 
 private:
+    std::optional<std::size_t> activeInsertionPart() const noexcept
+    {
+        if (variationRouting.connection()
+            != XgVariationConnection::insertion) {
+            return std::nullopt;
+        }
+        return variationRouting.assignedPart();
+    }
+
+    static void queueController(PartState& part, std::uint8_t controller,
+                                std::uint8_t value,
+                                std::int32_t deltaFrames)
+    {
+        const auto message = 0x000000b0u
+            | (static_cast<std::uint32_t>(controller) << 8)
+            | (static_cast<std::uint32_t>(value) << 16);
+        queue(part, message, deltaFrames);
+    }
+
+    static void prepareInsertionInput(PartState& part,
+                                      std::int32_t deltaFrames)
+    {
+        queueController(part, 7, maximumControllerValue, deltaFrames);
+        queueController(part, 10, centerPan, deltaFrames);
+        queueController(part, 11, maximumControllerValue, deltaFrames);
+    }
+
+    static void restorePartMix(PartState& part, std::int32_t deltaFrames)
+    {
+        queueController(part, 7, part.volume, deltaFrames);
+        queueController(part, 10, part.pan, deltaFrames);
+        queueController(part, 11, part.expression, deltaFrames);
+    }
+
     void configure(PartState& part, float rate, std::int32_t size)
     {
         part.effect->dispatcher(part.effect, vst2::setSampleRate, 0, 0,
@@ -327,8 +405,8 @@ private:
             const auto l = left[frame];
             const auto r = right[frame];
             if (insertion) {
-                buses[6 * stride + frame] += l;
-                buses[7 * stride + frame] += r;
+                buses[6 * stride + frame] += l * insertionPrePanGain;
+                buses[7 * stride + frame] += r * insertionPrePanGain;
                 continue;
             }
             buses[0 * stride + frame] += l;
@@ -385,10 +463,10 @@ bool XglEngine::queueShort(std::uint32_t packedMessage,
     return impl->queueShort(packedMessage, deltaFrames);
 }
 
-void XglEngine::observeSysex(
-    std::span<const std::uint8_t> sysex) noexcept
+void XglEngine::observeSysex(std::span<const std::uint8_t> sysex,
+                             std::int32_t deltaFrames)
 {
-    impl->observeSysex(sysex);
+    impl->observeSysex(sysex, deltaFrames);
 }
 
 void XglEngine::render(std::int32_t frames, std::span<float> buses,

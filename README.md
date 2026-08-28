@@ -36,7 +36,11 @@ wrapper safely observes the XG connection and part-assignment parameters rather
 than forwarding arbitrary SysEx into S-YXG2006LE. The assigned part is removed
 from the dry/reverb/chorus input buses and sent in full to the variation bus,
 matching the measured routing of S-YXG50. The variation processor then applies
-its own wet/dry balance and downstream reverb/chorus sends.
+its own wet/dry balance and downstream reverb/chorus sends. S-YXG50 insertion
+effects receive audio before part volume, expression, and pan. While a 2006LE
+part owns that slot, its isolated source is therefore rendered at full volume,
+full expression, and centre pan; S-YXG50 receives the real controller values
+and applies them after the effect.
 
 SG ownership is resolved before PCM note generation. A channel-zero-only replay
 of the retained `SG_yuki` research trace is sample-identical between the
