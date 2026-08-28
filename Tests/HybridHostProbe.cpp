@@ -210,15 +210,28 @@ int main(int argc, char** argv)
     const auto blockText = std::getenv("HYBRID_PROBE_BLOCKS");
     const auto renderBlocks = blockText == nullptr ? 100
         : std::max(1, std::atoi(blockText));
+    float postEventPeak = 0.0f;
+    double postEventEnergy = 0.0;
     for (int block = 0; block < renderBlocks; ++block) {
         renderBlock();
+        for (const auto* output : outputs) {
+            for (std::int32_t frame = 0; frame < blockSize; ++frame) {
+                const auto sample = output[frame];
+                postEventPeak = std::max(postEventPeak, std::abs(sample));
+                postEventEnergy += static_cast<double>(sample) * sample;
+            }
+        }
     }
+    const auto postEventRms = std::sqrt(postEventEnergy
+        / (static_cast<double>(renderBlocks) * blockSize * outputs.size()));
 
     std::printf("name=%s product=%s vendor=%s id=%08x programs=%d "
-                "parameters=%d outputs=%d peak=%g hash=%016llx\n",
+                "parameters=%d outputs=%d peak=%g postPeak=%g postRms=%g "
+                "hash=%016llx\n",
                 name.data(), product.data(), vendor.data(),
                 static_cast<unsigned int>(effect->uniqueId), effect->numPrograms,
-                effect->numParams, effect->numOutputs, peak,
+                effect->numParams, effect->numOutputs, peak, postEventPeak,
+                postEventRms,
                 static_cast<unsigned long long>(sampleHash));
     const bool identityPassed = std::strcmp(name.data(), "S-YXG2026 Hybrid") == 0
         && std::strcmp(product.data(), "S-YXG2026 Hybrid") == 0

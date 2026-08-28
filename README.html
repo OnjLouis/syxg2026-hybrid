@@ -47,9 +47,12 @@
   <p>This is a deeper hybrid than simply switching between complete plugins.
   Sixteen isolated S-YXG2006LE instances provide one dry source per MIDI part.
   Their built-in reverb and chorus are held at zero. The wrapper derives dry,
-  reverb-send, chorus-send, and variation-send buses for every part and inserts
-  those buses into S-YXG50 before its effects stage. VL/PVL and SG use the same
-  recovered S-YXG50 effects bridge.</p>
+  reverb-send, chorus-send, and variation buses for every part and inserts
+  those buses into S-YXG50 before its effects stage. System variation follows
+  CC94. In insertion mode, the assigned part is routed in full through the
+  variation processor, including that effect's own wet/dry balance and
+  downstream sends. VL/PVL and SG use the same recovered S-YXG50 effects
+  bridge.</p>
 
   <h2>Current status</h2>
 
@@ -61,8 +64,11 @@
     than real time together on the development system.</li>
     <li>Voices present in S-YXG2006LE are selected from its bank table.</li>
     <li>Missing S-YXG2006LE bank/program slots fall back to S-YXG50.</li>
-    <li>CC91, CC93, and CC94 change S-YXG50 reverb, chorus, and variation output
-    while the source S-YXG2006LE instances remain dry.</li>
+    <li>CC91, CC93, and CC94 change S-YXG50 reverb, chorus, and system variation
+    output while the source S-YXG2006LE instances remain dry.</li>
+    <li>XG insertion-variation connection and part assignment are observed
+    safely and route the selected S-YXG2006LE part through S-YXG50 variation
+    DSP.</li>
     <li>VL/PVL and SG continue to coexist with the two PCM sources.</li>
     <li>An SG-only replay is sample-identical to the accepted S-YXG100 Hybrid,
     proving that SG notes are not doubled by S-YXG2006LE.</li>
@@ -77,7 +83,8 @@
     original 2006LE VST because its isolated SysEx entry path faults. S-YXG50,
     VL/PVL, and SG still receive their established SysEx paths. MIDI files that
     configure unusual 2006LE part state exclusively through SysEx need further
-    testing and may require explicit translation in the wrapper.</p>
+    testing and may require explicit translation in the wrapper. XG system and
+    insertion variation routing are already translated and supported.</p>
   </div>
 
   <h2>Real-time use</h2>

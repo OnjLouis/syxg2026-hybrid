@@ -1077,6 +1077,8 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                         if (wrapper.xgl != nullptr)
                             wrapper.xgl->reset();
                     }
+                    if (wrapper.xgl != nullptr)
+                        wrapper.xgl->observeSysex(bytes);
                     if (const auto assignment =
                             hybrid::vlVoiceAssignment(bytes)) {
                         const auto voiceIndex = assignment->voice;

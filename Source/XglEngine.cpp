@@ -1,4 +1,5 @@
 #include "XglEngine.h"
+#include "XgVariationRouting.h"
 #include "XglVoiceMap.h"
 
 #include <windows.h>
@@ -150,6 +151,7 @@ public:
 
     void reset()
     {
+        variationRouting.reset();
         for (auto& part : parts) {
             part.bankMsb = 0;
             part.bankLsb = 0;
@@ -168,6 +170,11 @@ public:
             queue(part, 0x000020b0u, 0);
             queue(part, 0x000000c0u, 0);
         }
+    }
+
+    void observeSysex(std::span<const std::uint8_t> sysex) noexcept
+    {
+        variationRouting.observe(sysex);
     }
 
     bool queueShort(std::uint32_t message, std::int32_t deltaFrames)
@@ -231,14 +238,16 @@ public:
         right.resize(frames);
         std::array<float*, 2> outputs { left.data(), right.data() };
 
-        for (auto& part : parts) {
+        for (std::size_t partIndex = 0; partIndex < parts.size();
+             ++partIndex) {
+            auto& part = parts[partIndex];
             dispatchPending(part, frames);
             std::fill(left.begin(), left.end(), 0.0f);
             std::fill(right.begin(), right.end(), 0.0f);
             const auto process = part.effect->processReplacing != nullptr
                 ? part.effect->processReplacing : part.effect->process;
             process(part.effect, nullptr, outputs.data(), frames);
-            mixPart(part, buses, busStride, frames);
+            mixPart(part, partIndex, buses, busStride, frames);
             part.pending.clear();
         }
     }
@@ -304,23 +313,32 @@ private:
                                 &batch, 0.0f);
     }
 
-    void mixPart(const PartState& part, std::span<float> buses,
+    void mixPart(const PartState& part, std::size_t partIndex,
+                 std::span<float> buses,
                  std::size_t stride, std::int32_t frames) const noexcept
     {
         const auto reverb = part.reverbSend / 127.0f;
         const auto chorus = part.chorusSend / 127.0f;
-        const auto variation = part.variationSend / 127.0f;
+        const auto systemVariation = variationRouting.connection()
+                == XgVariationConnection::system
+            ? part.variationSend / 127.0f : 0.0f;
+        const auto insertion = variationRouting.isInsertionPart(partIndex);
         for (std::int32_t frame = 0; frame < frames; ++frame) {
             const auto l = left[frame];
             const auto r = right[frame];
+            if (insertion) {
+                buses[6 * stride + frame] += l;
+                buses[7 * stride + frame] += r;
+                continue;
+            }
             buses[0 * stride + frame] += l;
             buses[1 * stride + frame] += r;
             buses[2 * stride + frame] += l * reverb;
             buses[3 * stride + frame] += r * reverb;
             buses[4 * stride + frame] += l * chorus;
             buses[5 * stride + frame] += r * chorus;
-            buses[6 * stride + frame] += l * variation;
-            buses[7 * stride + frame] += r * variation;
+            buses[6 * stride + frame] += l * systemVariation;
+            buses[7 * stride + frame] += r * systemVariation;
         }
     }
 
@@ -328,6 +346,7 @@ private:
     vst2::EntryPoint entry {};
     std::array<PartState, XglEngine::partCount> parts;
     XglVoiceMap voiceMap;
+    XgVariationRouting variationRouting;
     std::vector<float> left;
     std::vector<float> right;
     float sampleRate {};
@@ -364,6 +383,12 @@ bool XglEngine::queueShort(std::uint32_t packedMessage,
                            std::int32_t deltaFrames)
 {
     return impl->queueShort(packedMessage, deltaFrames);
+}
+
+void XglEngine::observeSysex(
+    std::span<const std::uint8_t> sysex) noexcept
+{
+    impl->observeSysex(sysex);
 }
 
 void XglEngine::render(std::int32_t frames, std::span<float> buses,

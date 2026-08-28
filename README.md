@@ -31,6 +31,13 @@ the established S-YXG50 effects bridge, alongside VL/PVL and SG buses. Thus the
 newer PCM source uses S-YXG50 reverb, chorus, and variation rather than the
 XG Lite effects.
 
+System variation uses each part's CC94 send. For insertion variation, the
+wrapper safely observes the XG connection and part-assignment parameters rather
+than forwarding arbitrary SysEx into S-YXG2006LE. The assigned part is removed
+from the dry/reverb/chorus input buses and sent in full to the variation bus,
+matching the measured routing of S-YXG50. The variation processor then applies
+its own wet/dry balance and downstream reverb/chorus sends.
+
 SG ownership is resolved before PCM note generation. A channel-zero-only replay
 of the retained `SG_yuki` research trace is sample-identical between the
 accepted S-YXG100 Hybrid and this wrapper. This guards against accidental SG and
@@ -42,7 +49,8 @@ The isolated S-YXG2006LE VST faults when its arbitrary SysEx entry path is used.
 The wrapper therefore mirrors short MIDI messages but does not forward SysEx to
 the 2006LE instances. S-YXG50, VL/PVL, and SG keep their existing SysEx paths.
 Common bank/program/controllers work, but unusual part parameters supplied only
-through XG SysEx may need explicit translation in a later revision.
+through XG SysEx may need explicit translation in a later revision. XG system
+and insertion variation routing are explicitly translated and supported.
 
 ## Runtime layout
 

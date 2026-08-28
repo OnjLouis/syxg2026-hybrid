@@ -27,6 +27,8 @@ add_library(SYXG2026Hybrid SHARED
     Source/VlPartRouter.h
     Source/XgEffectsBridge.cpp
     Source/XgEffectsBridge.h
+    Source/XgVariationRouting.cpp
+    Source/XgVariationRouting.h
     Source/XglEngine.cpp
     Source/XglEngine.h
     Source/XglVoiceMap.cpp
@@ -205,3 +207,14 @@ target_link_options(XglVoiceMapTests PRIVATE
     -static -static-libgcc -static-libstdc++
 )
 add_test(NAME XglVoiceMapTests COMMAND XglVoiceMapTests)
+
+add_executable(XgVariationRoutingTests
+    Tests/XgVariationRoutingTests.cpp
+    Source/XgVariationRouting.cpp
+    Source/XgVariationRouting.h
+)
+target_include_directories(XgVariationRoutingTests PRIVATE Source)
+target_link_options(XgVariationRoutingTests PRIVATE
+    -static -static-libgcc -static-libstdc++
+)
+add_test(NAME XgVariationRoutingTests COMMAND XgVariationRoutingTests)
