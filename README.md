@@ -12,6 +12,14 @@ S-YXG2026 Hybrid is a source-only 32-bit VST2 preservation project. It combines:
 The repository does not contain or distribute Yamaha binaries, tables, songs,
 presets, or firmware.
 
+## Preservation milestone
+
+This project is believed to be the first publicly documented modern Windows
+VST2 integration of S-YXG2006LE PCM voices, S-YXG50 full-XG voices and DSP,
+and the Japanese S-YXG100 VL/PVL and SG engines in one real-time instrument.
+That description is deliberately qualified: earlier private or unpublished
+work may exist.
+
 ## Architecture
 
 `XglEngine` loads S-YXG2006LE once and creates sixteen independent VST
@@ -55,6 +63,11 @@ the 2006LE instances. S-YXG50, VL/PVL, and SG keep their existing SysEx paths.
 Common bank/program/controllers work, but unusual part parameters supplied only
 through XG SysEx may need explicit translation in a later revision. XG system
 and insertion variation routing are explicitly translated and supported.
+
+The insertion correction is not drum-specific. It applies whenever a part
+owned by S-YXG2006LE is assigned to insertion variation, including bass,
+guitar, melodic, and drum parts. System variation and parts falling back to
+S-YXG50 retain their established routing.
 
 ## Runtime layout
 

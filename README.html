@@ -44,6 +44,11 @@
     remain available for compatible MIDI files.</li>
   </ul>
 
+  <p>This project is believed to be the first publicly documented modern
+  Windows VST2 integration of S-YXG2006LE PCM voices, S-YXG50 full-XG voices
+  and DSP, and the Japanese S-YXG100 VL/PVL and SG engines in one real-time
+  instrument. Earlier private or unpublished work may exist.</p>
+
   <p>This is a deeper hybrid than simply switching between complete plugins.
   Sixteen isolated S-YXG2006LE instances provide one dry source per MIDI part.
   Their built-in reverb and chorus are held at zero. The wrapper derives dry,
@@ -58,8 +63,8 @@
 
   <h2>Current status</h2>
 
-  <p>This build is a private test candidate, not a finished public release.
-  The following behaviours have passed automated or measured host tests:</p>
+  <p>This build is a source release candidate. The following behaviours have
+  passed automated, measured, or live host tests:</p>
 
   <ul>
     <li>All sixteen S-YXG2006LE instances are independent and operate faster
@@ -73,6 +78,9 @@
     DSP.</li>
     <li>Be-Bop's distorted drum insertion and nine further AWM song candidates
     spanning different variation types complete timed 48 kHz renders.</li>
+    <li>The insertion correction applies to every S-YXG2006LE-owned part,
+    including bass, guitar, melodic, and drum parts. System variation and
+    S-YXG50 fallback parts retain their established routing.</li>
     <li>VL/PVL and SG continue to coexist with the two PCM sources.</li>
     <li>An SG-only replay is sample-identical to the accepted S-YXG100 Hybrid,
     proving that SG notes are not doubled by S-YXG2006LE.</li>
@@ -148,7 +156,7 @@ sxgsgknl.vxd</pre>
   <h2>Redistribution</h2>
 
   <p>The project source does not distribute Yamaha binaries, tables, songs, or
-  firmware. Do not publish a private test runtime containing those files
+  firmware. Do not publish a runtime containing those files
   without the necessary rights. The integration code is available under the
   MIT License.</p>
 </main>
