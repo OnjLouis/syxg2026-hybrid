@@ -1,4 +1,5 @@
 #include "XglEngine.h"
+#include "XgPartModes.h"
 #include "XgVariationRouting.h"
 #include "XglVoiceMap.h"
 
@@ -162,7 +163,9 @@ public:
     void reset()
     {
         variationRouting.reset();
-        for (auto& part : parts) {
+        partModes.reset();
+        for (std::size_t partIndex = 0; partIndex < parts.size(); ++partIndex) {
+            auto& part = parts[partIndex];
             part.bankMsb = 0;
             part.bankLsb = 0;
             part.program = 0;
@@ -182,8 +185,10 @@ public:
             queueController(part, 7, defaultVolume, 0);
             queueController(part, 10, centerPan, 0);
             queueController(part, 11, maximumControllerValue, 0);
-            queue(part, 0x000000b0u, 0);
-            queue(part, 0x000020b0u, 0);
+            queueController(part, 0,
+                            partModes.effectiveBankMsb(partIndex, 0), 0);
+            queueController(part, 32,
+                            partModes.effectiveBankLsb(partIndex, 0), 0);
             queue(part, 0x000000c0u, 0);
         }
     }
@@ -193,6 +198,16 @@ public:
     {
         const auto previousPart = activeInsertionPart();
         variationRouting.observe(sysex);
+        if (const auto change = partModes.observe(sysex)) {
+            auto& part = parts[change->part];
+            queueController(part, 0, partModes.effectiveBankMsb(
+                change->part, part.bankMsb), deltaFrames);
+            queueController(part, 32, partModes.effectiveBankLsb(
+                change->part, part.bankLsb), deltaFrames);
+            queue(part, 0x000000c0u
+                | (static_cast<std::uint32_t>(part.program) << 8),
+                deltaFrames);
+        }
         const auto currentPart = activeInsertionPart();
         if (previousPart == currentPart)
             return;
@@ -227,6 +242,15 @@ public:
             part.expression = maximumControllerValue;
 
         auto remapped = remapToPartZero(message);
+        if (op == 0xb0 && first == 0) {
+            remapped = (remapped & 0x0000ffffu)
+                | (static_cast<std::uint32_t>(
+                    partModes.effectiveBankMsb(partIndex, part.bankMsb)) << 16);
+        } else if (op == 0xb0 && first == 32) {
+            remapped = (remapped & 0x0000ffffu)
+                | (static_cast<std::uint32_t>(
+                    partModes.effectiveBankLsb(partIndex, part.bankLsb)) << 16);
+        }
         if (op == 0xb0 && first == 121
             && variationRouting.isInsertionPart(partIndex)) {
             queue(part, remapped, deltaFrames);
@@ -249,7 +273,7 @@ public:
         }
 
         if (isNoteOn(message)) {
-            if (!hasSelectedVoice(part))
+            if (!hasSelectedVoice(partIndex, part))
                 return false;
             if (part.heldNotes[first] != 0xff)
                 ++part.heldNotes[first];
@@ -357,9 +381,12 @@ private:
         module = nullptr;
     }
 
-    bool hasSelectedVoice(const PartState& part) const noexcept
+    bool hasSelectedVoice(std::size_t partIndex,
+                          const PartState& part) const noexcept
     {
-        return voiceMap.hasVoice(part.bankMsb, part.bankLsb, part.program);
+        return voiceMap.hasVoice(
+            partModes.effectiveBankMsb(partIndex, part.bankMsb),
+            partModes.effectiveBankLsb(partIndex, part.bankLsb), part.program);
     }
 
     static void queue(PartState& part, std::uint32_t message,
@@ -423,6 +450,7 @@ private:
     HMODULE module {};
     vst2::EntryPoint entry {};
     std::array<PartState, XglEngine::partCount> parts;
+    XgPartModes partModes;
     XglVoiceMap voiceMap;
     XgVariationRouting variationRouting;
     std::vector<float> left;

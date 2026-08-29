@@ -118,7 +118,9 @@ bool compareCount(const char* wrapperPath, const char* directPath,
         batch.events[index] = reinterpret_cast<vst2::Event*>(&midi[index]);
     }
     setMessage(midi[0], 0xb3, 0, 0);
-    setMessage(midi[1], 0xb3, 32, 1);
+    // Bank 0/2 is absent from 2006LE and must remain byte-identical to the
+    // S-YXG50 fallback, regardless of event-batch size.
+    setMessage(midi[1], 0xb3, 32, 2);
     setMessage(midi[2], 0xc3, 5, 0);
     setMessage(midi[count - 2], 0x93, 60, 100);
     setMessage(midi[count - 1], 0x83, 60, 0);

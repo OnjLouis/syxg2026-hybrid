@@ -71,6 +71,9 @@
     than real time together on the development system.</li>
     <li>Voices present in S-YXG2006LE are selected from its bank table.</li>
     <li>Missing S-YXG2006LE bank/program slots fall back to S-YXG50.</li>
+    <li>Channel 10 follows the XG reset rhythm default. Yamaha part-mode SysEx
+    can also switch any part between melodic and rhythm operation, with rhythm
+    parts mapped to the complete <code>127/0</code> drum bank.</li>
     <li>CC91, CC93, and CC94 change S-YXG50 reverb, chorus, and system variation
     output while the source S-YXG2006LE instances remain dry.</li>
     <li>XG insertion-variation connection and part assignment are observed
@@ -95,8 +98,9 @@
     original 2006LE VST because its isolated SysEx entry path faults. S-YXG50,
     VL/PVL, and SG still receive their established SysEx paths. MIDI files that
     configure unusual 2006LE part state exclusively through SysEx need further
-    testing and may require explicit translation in the wrapper. XG system and
-    insertion variation routing are already translated and supported.</p>
+    testing and may require explicit translation in the wrapper. XG rhythm-part
+    mode, system variation, and insertion variation routing are already
+    translated and supported.</p>
   </div>
 
   <h2>Real-time use</h2>

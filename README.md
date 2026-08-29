@@ -31,6 +31,9 @@ The wrapper parses `sxgbnw6l.tbl` to determine whether the selected bank and
 program exist in S-YXG2006LE. Defined note-ons are rendered by that part's
 2006LE instance. Undefined slots remain on S-YXG50. Releases reach both PCM
 engines where necessary so a bank transition cannot strand a held note.
+Channel 10 starts in the XG rhythm mode after reset. Explicit Yamaha part-mode
+SysEx can switch any other part between melodic and rhythm operation; rhythm
+parts use the complete S-YXG2006LE drum bank `127/0` internally.
 
 CC91, CC93, and CC94 are retained as per-part send levels but forced to zero in
 the private S-YXG2006LE instances. The dry result is copied into eight buses:
@@ -61,8 +64,9 @@ The isolated S-YXG2006LE VST faults when its arbitrary SysEx entry path is used.
 The wrapper therefore mirrors short MIDI messages but does not forward SysEx to
 the 2006LE instances. S-YXG50, VL/PVL, and SG keep their existing SysEx paths.
 Common bank/program/controllers work, but unusual part parameters supplied only
-through XG SysEx may need explicit translation in a later revision. XG system
-and insertion variation routing are explicitly translated and supported.
+through XG SysEx may need explicit translation in a later revision. XG
+rhythm-part mode, system variation, and insertion variation routing are
+explicitly translated and supported.
 
 The insertion correction is not drum-specific. It applies whenever a part
 owned by S-YXG2006LE is assigned to insertion variation, including bass,

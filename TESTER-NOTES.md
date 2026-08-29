@@ -17,8 +17,11 @@ and select `S-YXG2026 Hybrid` explicitly in the host while evaluating it.
 7. Exercise insertion variation on S-YXG2006LE-owned melodic, bass, guitar,
    and drum parts. The source must enter S-YXG50 DSP before part volume,
    expression, and pan; Be-Bop is the known distortion reference.
+8. Exercise channel-10 percussion and files that use Yamaha part-mode SysEx to
+   create additional rhythm parts. These must select drum bank `127/0`, never
+   the melodic program-zero piano.
 
 The current probes cover effects-bus injection, present and missing 2006LE
 slots, VL coexistence, sample-identical SG ownership, two simultaneous plugin
-instances, and 44.1/48 kHz rendering. They do not prove every XG SysEx-defined
-part parameter.
+instances, 44.1/48 kHz rendering, channel-10 rhythm defaults, and translated
+XG part-mode changes. They do not prove every XG SysEx-defined part parameter.
