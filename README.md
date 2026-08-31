@@ -34,10 +34,11 @@ engines where necessary so a bank transition cannot strand a held note.
 Channel 10 starts in rhythm mode after reset. In XG mode, a later melodic bank
 MSB releases that implicit default so channel 10 can carry pitched voices, and
 bank 127 restores rhythm operation. GM1 and GS bank selections preserve their
-channel-10 drum default. GM2 uses its standard bank 120 rhythm and bank 121
+channel-10 drum default and use the compatibility drum bank `120/0`, preserving
+the non-XG drum-note layout. GM2 also uses bank 120 for rhythm and bank 121 for
 melodic selections. Explicit Yamaha part-mode SysEx can switch any part between
 melodic and rhythm operation and remains authoritative over later bank changes.
-Rhythm parts use the complete S-YXG2006LE drum bank `127/0` internally.
+XG rhythm parts use the complete S-YXG2006LE drum bank `127/0` internally.
 
 GM1 System On, GM2 System On, GS Reset, and XG System On all clear retained
 routing and controller state. Because S-YXG2006LE cannot safely receive those
