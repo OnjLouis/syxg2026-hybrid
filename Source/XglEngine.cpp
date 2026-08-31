@@ -161,10 +161,10 @@ public:
         }
     }
 
-    void reset()
+    void reset(MidiSystemReset system = MidiSystemReset::xg)
     {
         variationRouting.reset();
-        partModes.reset();
+        partModes.reset(system);
         for (std::size_t partIndex = 0; partIndex < parts.size(); ++partIndex) {
             auto& part = parts[partIndex];
             part.bankMsb = 0;
@@ -478,9 +478,9 @@ void XglEngine::setBlockSize(std::int32_t blockSize)
     impl->setBlockSize(blockSize);
 }
 
-void XglEngine::reset()
+void XglEngine::reset(MidiSystemReset system)
 {
-    impl->reset();
+    impl->reset(system);
 }
 
 bool XglEngine::queueShort(std::uint32_t packedMessage,

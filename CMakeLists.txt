@@ -246,6 +246,8 @@ add_test(NAME XglVoiceMapTests COMMAND XglVoiceMapTests)
 
 add_executable(XgPartModesTests
     Tests/XgPartModesTests.cpp
+    Source/MidiSystemReset.cpp
+    Source/MidiSystemReset.h
     Source/XgPartModes.cpp
     Source/XgPartModes.h
 )

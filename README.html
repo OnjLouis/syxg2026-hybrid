@@ -71,11 +71,12 @@
     than real time together on the development system.</li>
     <li>Voices present in S-YXG2006LE are selected from its bank table.</li>
     <li>Missing S-YXG2006LE bank/program slots fall back to S-YXG50.</li>
-    <li>Channel 10 follows the XG reset rhythm default, but a later melodic bank
-    selection releases that implicit mode so the channel can carry pitched
-    voices; bank 127 restores drums. Yamaha part-mode SysEx can also switch any
-    part explicitly and remains authoritative, with rhythm parts mapped to the
-    complete <code>127/0</code> drum bank.</li>
+    <li>Channel 10 starts in rhythm mode after reset. XG melodic banks release
+    that implicit mode and bank 127 restores drums; GM1 and GS bank selections
+    preserve the channel-10 drum default; GM2 uses bank 120 for rhythm and bank
+    121 for melodic operation. Yamaha part-mode SysEx can also switch any part
+    explicitly and remains authoritative, with rhythm parts mapped internally
+    to the complete <code>127/0</code> drum bank.</li>
     <li>GM1 System On, GM2 System On, GS Reset, and XG System On clear retained
     routing and controller state. The wrapper explicitly restores supported
     private-engine controllers, including neutral values for CC71 through

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MidiSystemReset.h"
+
 #include "Vst2Abi.h"
 
 #include <cstddef>
@@ -26,7 +28,7 @@ public:
 
     void setSampleRate(float sampleRate);
     void setBlockSize(std::int32_t blockSize);
-    void reset();
+    void reset(MidiSystemReset system = MidiSystemReset::xg);
 
     // Returns true only when a note-on belongs to a voice rendered by 2006LE.
     // Releases are queued here but also reach S-YXG50, preventing stuck notes

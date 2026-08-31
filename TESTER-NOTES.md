@@ -17,10 +17,11 @@ and select `S-YXG2026 Hybrid` explicitly in the host while evaluating it.
 7. Exercise insertion variation on S-YXG2006LE-owned melodic, bass, guitar,
    and drum parts. The source must enter S-YXG50 DSP before part volume,
    expression, and pan; Be-Bop is the known distortion reference.
-8. Exercise channel-10 percussion, melodic channel-10 files such as
-   `Neptuns_sphere`, and files that use Yamaha part-mode SysEx to create
-   additional rhythm parts. Reset defaults and bank `127/0` must remain drums;
-   an explicit melodic bank must play a pitched voice instead.
+8. Exercise channel-10 percussion, melodic XG channel-10 files such as
+   `Neptuns_sphere`, GS files such as `DEMO0002.MID`, and files that use Yamaha
+   part-mode SysEx to create additional rhythm parts. XG bank `127/0` must play
+   drums, GM1 and GS bank-zero setup must preserve percussion, GM2 must observe
+   banks 120 and 121, and an explicit XG melodic bank must play a pitched voice.
 9. Alter CC71 through CC78, then send GM1 System On, GM2 System On, GS Reset,
    or XG System On. A subsequent note must use the neutral controller state;
    CC71 through CC78 return to 64.

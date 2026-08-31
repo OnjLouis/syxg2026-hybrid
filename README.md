@@ -31,12 +31,13 @@ The wrapper parses `sxgbnw6l.tbl` to determine whether the selected bank and
 program exist in S-YXG2006LE. Defined note-ons are rendered by that part's
 2006LE instance. Undefined slots remain on S-YXG50. Releases reach both PCM
 engines where necessary so a bank transition cannot strand a held note.
-Channel 10 starts in the XG rhythm mode after reset. A later melodic bank MSB
-releases that implicit default, so channel 10 can carry pitched voices; bank
-127 restores rhythm operation. Explicit Yamaha part-mode SysEx can switch any
-part between melodic and rhythm operation and remains authoritative over later
-bank changes. Rhythm parts use the complete S-YXG2006LE drum bank `127/0`
-internally.
+Channel 10 starts in rhythm mode after reset. In XG mode, a later melodic bank
+MSB releases that implicit default so channel 10 can carry pitched voices, and
+bank 127 restores rhythm operation. GM1 and GS bank selections preserve their
+channel-10 drum default. GM2 uses its standard bank 120 rhythm and bank 121
+melodic selections. Explicit Yamaha part-mode SysEx can switch any part between
+melodic and rhythm operation and remains authoritative over later bank changes.
+Rhythm parts use the complete S-YXG2006LE drum bank `127/0` internally.
 
 GM1 System On, GM2 System On, GS Reset, and XG System On all clear retained
 routing and controller state. Because S-YXG2006LE cannot safely receive those
