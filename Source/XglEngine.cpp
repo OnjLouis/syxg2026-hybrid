@@ -1,5 +1,6 @@
 #include "XglEngine.h"
 #include "XgPartModes.h"
+#include "XglResetControllers.h"
 #include "XgVariationRouting.h"
 #include "XglVoiceMap.h"
 
@@ -179,12 +180,8 @@ public:
             part.pending.clear();
             queue(part, 0x000078b0u, 0);
             queue(part, 0x000079b0u, 0);
-            queue(part, 0x00005bb0u, 0);
-            queue(part, 0x00005db0u, 0);
-            queue(part, 0x00005eb0u, 0);
-            queueController(part, 7, defaultVolume, 0);
-            queueController(part, 10, centerPan, 0);
-            queueController(part, 11, maximumControllerValue, 0);
+            for (const auto& reset : privateXglControllerResets)
+                queueController(part, reset.controller, reset.value, 0);
             queueController(part, 0,
                             partModes.effectiveBankMsb(partIndex, 0), 0);
             queueController(part, 32,

@@ -13,6 +13,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(SYXG2026Hybrid SHARED
     Source/MidiRouter.cpp
     Source/MidiRouter.h
+    Source/MidiSystemReset.cpp
+    Source/MidiSystemReset.h
     Source/NativeSgClient.cpp
     Source/NativeSgClient.h
     Source/NativeVlClient.cpp
@@ -33,6 +35,7 @@ add_library(SYXG2026Hybrid SHARED
     Source/XgVariationRouting.h
     Source/XglEngine.cpp
     Source/XglEngine.h
+    Source/XglResetControllers.h
     Source/XglVoiceMap.cpp
     Source/XglVoiceMap.h
     Source/HybridVst.cpp
@@ -117,6 +120,27 @@ target_include_directories(MidiRouterTests PRIVATE Source)
 target_link_options(MidiRouterTests PRIVATE -static -static-libgcc -static-libstdc++)
 add_test(NAME MidiRouterTests COMMAND MidiRouterTests)
 
+add_executable(MidiSystemResetTests
+    Tests/MidiSystemResetTests.cpp
+    Source/MidiSystemReset.cpp
+    Source/MidiSystemReset.h
+)
+target_include_directories(MidiSystemResetTests PRIVATE Source)
+target_link_options(MidiSystemResetTests PRIVATE
+    -static -static-libgcc -static-libstdc++
+)
+add_test(NAME MidiSystemResetTests COMMAND MidiSystemResetTests)
+
+add_executable(XglResetControllersTests
+    Tests/XglResetControllersTests.cpp
+    Source/XglResetControllers.h
+)
+target_include_directories(XglResetControllersTests PRIVATE Source)
+target_link_options(XglResetControllersTests PRIVATE
+    -static -static-libgcc -static-libstdc++
+)
+add_test(NAME XglResetControllersTests COMMAND XglResetControllersTests)
+
 add_executable(LeImageLoaderTests
     Tests/LeImageLoaderTests.cpp
     Source/LeImageLoader.cpp
@@ -187,6 +211,16 @@ target_link_options(VlVoiceAllocatorTests PRIVATE
     -static -static-libgcc -static-libstdc++
 )
 add_test(NAME VlVoiceAllocatorTests COMMAND VlVoiceAllocatorTests)
+
+# These legacy tests use the C assert macro. Keep their checks active when the
+# normal release build is used for packaging and validation.
+foreach(assertion_test IN ITEMS
+    MidiChannelSnapshotTests
+    VlPartRouterTests
+    VlVoiceAllocatorTests
+)
+    target_compile_options(${assertion_test} PRIVATE -UNDEBUG)
+endforeach()
 
 add_executable(StreamingRateAdapterTests
     Tests/StreamingRateAdapterTests.cpp

@@ -35,6 +35,14 @@ Channel 10 starts in the XG rhythm mode after reset. Explicit Yamaha part-mode
 SysEx can switch any other part between melodic and rhythm operation; rhythm
 parts use the complete S-YXG2006LE drum bank `127/0` internally.
 
+GM1 System On, GM2 System On, GS Reset, and XG System On all clear retained
+routing and controller state. Because S-YXG2006LE cannot safely receive those
+SysEx messages and does not fully implement CC121, the wrapper explicitly
+restores its supported channel controllers. This includes neutral values for
+the GM2/XG sound controls CC71 through CC78. Reset recognition does not turn
+the hybrid into a complete Roland GS implementation; the original S-YXG50
+engine still determines how the forwarded mode message and sound map behave.
+
 CC91, CC93, and CC94 are retained as per-part send levels but forced to zero in
 the private S-YXG2006LE instances. The dry result is copied into eight buses:
 dry L/R, reverb L/R, chorus L/R, and variation L/R. Those buses are injected at
