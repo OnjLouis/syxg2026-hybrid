@@ -83,6 +83,9 @@ S-YXG50 retain their established routing.
 
 ## Runtime layout
 
+The packaged tester archive groups these files in its `VST` folder. Keep them
+beside one another in that one runtime directory:
+
 ```text
 syxg2026-hybrid.dll       built by this project
 syxg2026-vl-worker.exe    built by this project
