@@ -6,6 +6,7 @@ void XgPartModes::reset() noexcept
 {
     rhythmParts.fill(false);
     rhythmParts[defaultRhythmPart] = true;
+    explicitPartModes.fill(false);
 }
 
 std::optional<XgPartModeChange> XgPartModes::observe(
@@ -32,12 +33,26 @@ std::optional<XgPartModeChange> XgPartModes::observe(
         if (address != partModeAddress)
             continue;
         const bool rhythm = sysex[index] != 0;
-        if (rhythmParts[part] == rhythm)
+        const bool changed = rhythmParts[part] != rhythm;
+        explicitPartModes[part] = true;
+        if (!changed)
             return std::nullopt;
         rhythmParts[part] = rhythm;
         return XgPartModeChange { part, rhythm };
     }
     return std::nullopt;
+}
+
+std::optional<XgPartModeChange> XgPartModes::selectBankMsb(
+    std::size_t part, std::uint8_t bankMsb) noexcept
+{
+    if (part >= partCount || explicitPartModes[part])
+        return std::nullopt;
+    const bool rhythm = bankMsb == rhythmBankMsb;
+    if (rhythmParts[part] == rhythm)
+        return std::nullopt;
+    rhythmParts[part] = rhythm;
+    return XgPartModeChange { part, rhythm };
 }
 
 bool XgPartModes::isRhythm(std::size_t part) const noexcept

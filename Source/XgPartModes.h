@@ -24,6 +24,8 @@ public:
     void reset() noexcept;
     [[nodiscard]] std::optional<XgPartModeChange> observe(
         std::span<const std::uint8_t> sysex) noexcept;
+    [[nodiscard]] std::optional<XgPartModeChange> selectBankMsb(
+        std::size_t part, std::uint8_t bankMsb) noexcept;
     [[nodiscard]] bool isRhythm(std::size_t part) const noexcept;
     [[nodiscard]] std::uint8_t effectiveBankMsb(
         std::size_t part, std::uint8_t selectedBankMsb) const noexcept;
@@ -32,6 +34,7 @@ public:
 
 private:
     std::array<bool, partCount> rhythmParts {};
+    std::array<bool, partCount> explicitPartModes {};
 };
 
 } // namespace hybrid

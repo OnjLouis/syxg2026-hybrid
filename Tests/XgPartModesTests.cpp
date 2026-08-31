@@ -27,6 +27,21 @@ int main()
            "default rhythm channel selects the drum bank");
     expect(modes.effectiveBankLsb(9, 113) == 0,
            "default rhythm channel clears melodic bank variation");
+    const auto melodicChannel10 = modes.selectBankMsb(9, 0);
+    expect(melodicChannel10 && !melodicChannel10->rhythm,
+           "channel 10 reports its bank-selected melodic transition");
+    expect(!modes.isRhythm(9),
+           "an explicit melodic bank releases channel 10 from its default rhythm mode");
+    expect(modes.effectiveBankMsb(9, 0) == 0,
+           "channel 10 preserves an explicit melodic bank MSB");
+    expect(modes.effectiveBankLsb(9, 115) == 115,
+           "channel 10 preserves an explicit melodic bank LSB");
+    const auto drumChannel10 = modes.selectBankMsb(9, 127);
+    expect(drumChannel10 && drumChannel10->rhythm,
+           "drum bank 127 restores channel 10 rhythm mode");
+    expect(modes.effectiveBankLsb(9, 115) == 0,
+           "restored rhythm mode clears melodic bank variation");
+    (void)modes.selectBankMsb(9, 0);
     expect(modes.effectiveBankMsb(5, 64) == 64,
            "melodic channels preserve the selected bank");
     expect(modes.effectiveBankLsb(5, 113) == 113,
@@ -42,6 +57,9 @@ int main()
            "enabled rhythm channel selects the drum bank");
     expect(modes.effectiveBankLsb(5, 113) == 0,
            "enabled rhythm channel clears melodic bank variation");
+    (void)modes.selectBankMsb(5, 0);
+    expect(modes.isRhythm(5),
+           "an explicit rhythm-part command takes precedence over bank select");
 
     const std::array<std::uint8_t, 9> disable {
         0xf0, 0x43, 0x10, 0x4c, 0x08, 0x05, 0x07, 0x00, 0xf7

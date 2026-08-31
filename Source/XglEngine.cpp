@@ -222,9 +222,10 @@ public:
         const auto first = dataByte1(message);
         const auto second = dataByte2(message);
 
-        if (op == 0xb0 && first == 0)
+        if (op == 0xb0 && first == 0) {
             part.bankMsb = second;
-        else if (op == 0xb0 && first == 32)
+            (void)partModes.selectBankMsb(partIndex, second);
+        } else if (op == 0xb0 && first == 32)
             part.bankLsb = second;
         else if (op == 0xc0)
             part.program = first;
