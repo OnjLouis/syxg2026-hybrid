@@ -122,6 +122,17 @@ bool compareCount(const char* wrapperPath, const char* directPath,
     // S-YXG50 fallback, regardless of event-batch size.
     setMessage(midi[1], 0xb3, 32, 2);
     setMessage(midi[2], 0xc3, 5, 0);
+    constexpr std::array<std::uint8_t, 22> controllers {
+        1, 5, 7, 10, 11, 64, 65, 71, 72, 73, 74,
+        91, 93, 94, 98, 99, 100, 101, 120, 121, 123, 6,
+    };
+    for (std::size_t index = 0; index < controllers.size(); ++index) {
+        setMessage(midi[index + 3], 0xb3, controllers[index],
+                   static_cast<std::uint8_t>(32 + index));
+    }
+    setMessage(midi[25], 0xa3, 60, 48);  // polyphonic pressure
+    setMessage(midi[26], 0xd3, 72, 0);   // channel pressure
+    setMessage(midi[27], 0xe3, 0, 96);   // pitch bend
     setMessage(midi[count - 2], 0x93, 60, 100);
     setMessage(midi[count - 1], 0x83, 60, 0);
     midi[count - 1].deltaFrames = 400;

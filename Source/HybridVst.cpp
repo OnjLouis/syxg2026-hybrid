@@ -1,3 +1,4 @@
+#include "GsEffectTranslator.h"
 #include "MidiRouter.h"
 #include "MidiSystemReset.h"
 #include "MidiChannelSnapshot.h"
@@ -44,6 +45,7 @@ constexpr std::size_t maxVlVoices = 8;
 constexpr std::size_t childEventsPerBatch = 4096;
 constexpr std::size_t maxChildEventBatches = 8;
 constexpr std::size_t maxSyntheticPartModeEvents = childEventsPerBatch;
+constexpr std::size_t maxSyntheticGsEffectEvents = childEventsPerBatch;
 constexpr float int16Scale = 1.0f / 32768.0f;
 constexpr float defaultNativeOutputGain = 3.5f;
 constexpr float xgInternalBusScale = 32768.0f;
@@ -153,6 +155,7 @@ struct WrapperState {
     hybrid::VlVoiceAllocator<maxVlVoices> vlVoiceAllocator;
     SgState sg;
     hybrid::MidiRouter router;
+    hybrid::GsEffectTranslator gsEffectTranslator;
     hybrid::XgPartModes childPartModes;
     std::array<VlSetupEvent, maxVlSetupEvents> vlSetupEvents {};
     std::size_t vlSetupEventCount {};
@@ -172,6 +175,13 @@ struct WrapperState {
     std::array<std::array<std::uint8_t, 9>, maxSyntheticPartModeEvents>
         syntheticPartModeData {};
     std::size_t syntheticPartModeEventCount {};
+    std::array<vst2::SysexEvent, maxSyntheticGsEffectEvents>
+        syntheticGsEffectSysexEvents {};
+    std::array<std::array<std::uint8_t, 10>, maxSyntheticGsEffectEvents>
+        syntheticGsEffectSysexData {};
+    std::array<vst2::MidiEvent, maxSyntheticGsEffectEvents>
+        syntheticGsEffectMidiEvents {};
+    std::size_t syntheticGsEffectEventCount {};
     std::array<hybrid::ipc::TimedMidiEvent, maxPendingVlEvents>
         vlTimedMidiScratch {};
     std::vector<float> vlOutputBuses;
@@ -884,6 +894,45 @@ bool retainPartModeChange(WrapperState& wrapper,
     return true;
 }
 
+bool retainGsEffectSysex(WrapperState& wrapper,
+                         std::span<const std::uint8_t> bytes,
+                         std::int32_t deltaFrames, bool forceNew)
+{
+    if (bytes.size() > wrapper.syntheticGsEffectSysexData.front().size()
+        || wrapper.syntheticGsEffectEventCount
+            == wrapper.syntheticGsEffectSysexEvents.size()) {
+        return false;
+    }
+    const auto index = wrapper.syntheticGsEffectEventCount++;
+    auto& data = wrapper.syntheticGsEffectSysexData[index];
+    std::copy(bytes.begin(), bytes.end(), data.begin());
+    auto& event = wrapper.syntheticGsEffectSysexEvents[index];
+    event = {};
+    event.deltaFrames = deltaFrames;
+    event.dumpBytes = static_cast<std::int32_t>(bytes.size());
+    event.sysexDump = reinterpret_cast<char*>(data.data());
+    retainChildEvent(wrapper, reinterpret_cast<vst2::Event*>(&event), forceNew);
+    return true;
+}
+
+bool retainGsEffectSend(WrapperState& wrapper, std::size_t part, bool enabled,
+                        std::int32_t deltaFrames, bool forceNew)
+{
+    if (wrapper.syntheticGsEffectEventCount
+        == wrapper.syntheticGsEffectMidiEvents.size()) {
+        return false;
+    }
+    const auto index = wrapper.syntheticGsEffectEventCount++;
+    auto& event = wrapper.syntheticGsEffectMidiEvents[index];
+    event = {};
+    event.deltaFrames = deltaFrames;
+    event.midiData[0] = static_cast<char>(0xb0 | part);
+    event.midiData[1] = 94;
+    event.midiData[2] = static_cast<char>(enabled ? 127 : 0);
+    retainChildEvent(wrapper, reinterpret_cast<vst2::Event*>(&event), forceNew);
+    return true;
+}
+
 void clearChildEvents(WrapperState& wrapper)
 {
     for (std::size_t index = 0; index < wrapper.childBatchCount; ++index)
@@ -896,6 +945,7 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
     if (events == nullptr)
         return 0;
     wrapper.syntheticPartModeEventCount = 0;
+    wrapper.syntheticGsEffectEventCount = 0;
     const auto firstNewBatch = wrapper.childBatchCount;
     bool firstChildEvent = true;
     vst2::IntPtr result = 0;
@@ -1102,6 +1152,7 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                     if (systemReset != hybrid::MidiSystemReset::none) {
                         wrapper.router.reset();
                         wrapper.childPartModes.reset(systemReset);
+                        wrapper.gsEffectTranslator.reset();
                         resetVlPlaybackState(wrapper);
                         clearVlSetup(wrapper);
                         if (wrapper.sg.client == nullptr)
@@ -1113,6 +1164,94 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                     if (wrapper.xgl != nullptr)
                         wrapper.xgl->observeSysex(bytes,
                                                  sysex->deltaFrames);
+                    if (const auto gsEffect =
+                            wrapper.gsEffectTranslator.observe(bytes)) {
+                        // Do not also pass a recognized message to the child's
+                        // partial GS implementation: that can reactivate an
+                        // unrelated native effect after the XG replacement.
+                        sendToChild = false;
+                        if (gsEffect->type) {
+                            constexpr std::array<std::uint8_t, 9>
+                                systemVariation {
+                                    0xf0, 0x43, 0x10, 0x4c, 0x02,
+                                    0x01, 0x5a, 0x01, 0xf7,
+                                };
+                            const std::array<std::uint8_t, 10> effectType {
+                                0xf0, 0x43, 0x10, 0x4c, 0x02, 0x01, 0x40,
+                                gsEffect->type->msb, gsEffect->type->lsb, 0xf7,
+                            };
+                            if (retainGsEffectSysex(
+                                    wrapper, effectType,
+                                    sysex->deltaFrames, firstChildEvent)) {
+                                firstChildEvent = false;
+                                if (wrapper.xgl != nullptr)
+                                    wrapper.xgl->observeSysex(
+                                        effectType, sysex->deltaFrames);
+                            }
+                            if (retainGsEffectSysex(
+                                    wrapper, systemVariation,
+                                    sysex->deltaFrames,
+                                    firstChildEvent)) {
+                                firstChildEvent = false;
+                                if (wrapper.xgl != nullptr)
+                                    wrapper.xgl->observeSysex(
+                                        systemVariation, sysex->deltaFrames);
+                            }
+                        }
+                        for (std::size_t parameterIndex = 0;
+                             parameterIndex < gsEffect->parameterCount;
+                             ++parameterIndex) {
+                            const auto& parameter =
+                                gsEffect->parameters[parameterIndex];
+                            if (parameter.secondData) {
+                                const std::array<std::uint8_t, 10> message {
+                                    0xf0, 0x43, 0x10, 0x4c, 0x02,
+                                    0x01, parameter.address,
+                                    parameter.firstData,
+                                    *parameter.secondData, 0xf7,
+                                };
+                                if (retainGsEffectSysex(
+                                        wrapper, message,
+                                        sysex->deltaFrames,
+                                        firstChildEvent)) {
+                                    firstChildEvent = false;
+                                    if (wrapper.xgl != nullptr)
+                                        wrapper.xgl->observeSysex(
+                                            message, sysex->deltaFrames);
+                                }
+                            } else {
+                                const std::array<std::uint8_t, 9> message {
+                                    0xf0, 0x43, 0x10, 0x4c, 0x02,
+                                    0x01, parameter.address,
+                                    parameter.firstData, 0xf7,
+                                };
+                                if (retainGsEffectSysex(
+                                        wrapper, message,
+                                        sysex->deltaFrames,
+                                        firstChildEvent)) {
+                                    firstChildEvent = false;
+                                    if (wrapper.xgl != nullptr)
+                                        wrapper.xgl->observeSysex(
+                                            message, sysex->deltaFrames);
+                                }
+                            }
+                        }
+                        if (gsEffect->part) {
+                            const auto packed = 0x00005eb0u
+                                | static_cast<std::uint32_t>(*gsEffect->part)
+                                | (static_cast<std::uint32_t>(
+                                    gsEffect->enabled ? 127 : 0) << 16);
+                            if (retainGsEffectSend(
+                                    wrapper, *gsEffect->part,
+                                    gsEffect->enabled, sysex->deltaFrames,
+                                    firstChildEvent)) {
+                                firstChildEvent = false;
+                                if (wrapper.xgl != nullptr)
+                                    (void)wrapper.xgl->queueShort(
+                                        packed, sysex->deltaFrames);
+                            }
+                        }
+                    }
                     if (const auto assignment =
                             hybrid::vlVoiceAssignment(bytes)) {
                         const auto voiceIndex = assignment->voice;

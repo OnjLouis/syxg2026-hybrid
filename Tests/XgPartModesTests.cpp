@@ -96,7 +96,11 @@ int main()
         expect(!gsStyleBankSelect && modes.isRhythm(9),
                "GM and GS bank-zero setup keeps channel 10 in rhythm mode");
         expect(modes.effectiveBankMsb(9, 0) == 120,
-               "GM and GS rhythm mode uses the compatibility drum layout");
+               "GM and GS rhythm mode selects 2006LE's internal drum bank");
+        expect(modes.effectiveBankMsb(9, 48) == 120,
+               "GS bank variants retain 2026 drums when the kit exists");
+        expect(modes.effectiveBankLsb(9, 7) == 0,
+               "GM and GS rhythm mode clears melodic bank variation");
     }
 
     constexpr std::array<std::uint8_t, 11> demoGsReset {
@@ -106,7 +110,41 @@ int main()
     expect(!modes.selectBankMsb(9, 0) && modes.isRhythm(9),
            "DEMO0002 GS Reset followed by bank zero keeps drums on channel 10");
     expect(modes.effectiveBankMsb(9, 0) == 120,
-           "DEMO0002 GS Reset selects the non-XG drum layout");
+           "DEMO0002 GS Reset selects 2006LE's internal drum bank");
+
+    constexpr std::array<std::uint8_t, 11> gsPart9Drum2 {
+        0xf0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x19, 0x15, 0x02, 0x10, 0xf7
+    };
+    const auto part9Drum2 = modes.observe(gsPart9Drum2);
+    expect(part9Drum2 && part9Drum2->part == 8 && part9Drum2->rhythm,
+           "SC-88 Part 9 Drum2 SysEx enables rhythm on MIDI channel 9");
+    expect(modes.effectiveBankMsb(8, 0) == 120,
+           "SC-88 secondary rhythm part uses the internal drum bank");
+    expect(modes.sharedRhythmMap(8) == 2,
+           "SC-88 Drum2 assignment retains Roland Map 2 identity");
+    expect(!modes.sharesRhythmMap(8, 9),
+           "Roland Map 1 and Map 2 remain independent");
+
+    constexpr std::array<std::uint8_t, 11> gsPart11Drum2 {
+        0xf0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x1a, 0x15, 0x02, 0x0f, 0xf7
+    };
+    const auto part11Drum2 = modes.observe(gsPart11Drum2);
+    expect(part11Drum2 && part11Drum2->part == 10,
+           "SC-88 Part 11 Drum2 address maps to MIDI channel 11");
+    expect(modes.sharesRhythmMap(8, 10),
+           "parts assigned to Roland Drum2 share their kit state");
+
+    constexpr std::array<std::uint8_t, 11> gsPart9Normal {
+        0xf0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x19, 0x15, 0x00, 0x12, 0xf7
+    };
+    const auto part9Normal = modes.observe(gsPart9Normal);
+    expect(part9Normal && part9Normal->part == 8 && !part9Normal->rhythm,
+           "SC-88 Part 9 rhythm-off SysEx restores melodic mode");
+
+    auto malformedGsPartMode = gsPart9Drum2;
+    malformedGsPartMode[9] = 0;
+    expect(!modes.observe(malformedGsPartMode),
+           "SC-88 rhythm-part SysEx with a bad checksum is rejected");
 
     modes.reset(hybrid::MidiSystemReset::gm2);
     expect(!modes.selectBankMsb(9, 0) && modes.isRhythm(9),

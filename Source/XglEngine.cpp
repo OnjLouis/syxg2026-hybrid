@@ -227,8 +227,23 @@ public:
             (void)partModes.selectBankMsb(partIndex, second);
         } else if (op == 0xb0 && first == 32)
             part.bankLsb = second;
-        else if (op == 0xc0)
+        else if (op == 0xc0) {
             part.program = first;
+            if (partModes.sharedRhythmMap(partIndex)) {
+                for (std::size_t peerIndex = 0; peerIndex < parts.size();
+                     ++peerIndex) {
+                    if (peerIndex == partIndex
+                        || !partModes.sharesRhythmMap(
+                            partIndex, peerIndex)) {
+                        continue;
+                    }
+                    parts[peerIndex].program = first;
+                    queue(parts[peerIndex], 0x000000c0u
+                        | (static_cast<std::uint32_t>(first) << 8),
+                        deltaFrames);
+                }
+            }
+        }
 
         if (op == 0xb0 && first == 7)
             part.volume = second;

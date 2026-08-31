@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(SYXG2026Hybrid SHARED
+    Source/GsEffectTranslator.cpp
+    Source/GsEffectTranslator.h
     Source/MidiRouter.cpp
     Source/MidiRouter.h
     Source/MidiSystemReset.cpp
@@ -267,3 +269,14 @@ target_link_options(XgVariationRoutingTests PRIVATE
     -static -static-libgcc -static-libstdc++
 )
 add_test(NAME XgVariationRoutingTests COMMAND XgVariationRoutingTests)
+
+add_executable(GsEffectTranslatorTests
+    Tests/GsEffectTranslatorTests.cpp
+    Source/GsEffectTranslator.cpp
+    Source/GsEffectTranslator.h
+)
+target_include_directories(GsEffectTranslatorTests PRIVATE Source)
+target_link_options(GsEffectTranslatorTests PRIVATE
+    -static -static-libgcc -static-libstdc++
+)
+add_test(NAME GsEffectTranslatorTests COMMAND GsEffectTranslatorTests)

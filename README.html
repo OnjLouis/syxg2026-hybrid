@@ -63,7 +63,7 @@
 
   <h2>Current status</h2>
 
-  <p>This build is a source release candidate. The following behaviours have
+  <p>This is a public test build. The following behaviours have
   passed automated, measured, or live host tests:</p>
 
   <ul>
@@ -73,11 +73,22 @@
     <li>Missing S-YXG2006LE bank/program slots fall back to S-YXG50.</li>
     <li>Channel 10 starts in rhythm mode after reset. XG melodic banks release
     that implicit mode and bank 127 restores drums; GM1 and GS bank selections
-    preserve the channel-10 drum default and use compatibility bank 120 so the
-    non-XG drum-note layout remains intact; GM2 uses bank 120 for rhythm and
-    bank 121 for melodic operation. Yamaha part-mode SysEx can also switch any
-    part explicitly and remains authoritative. XG rhythm parts map internally
-    to the complete <code>127/0</code> drum bank.</li>
+    preserve the channel-10 drum default and use S-YXG2006LE bank
+    <code>120/0</code> when the selected kit exists; missing Roland kits remain
+    on S-YXG50. Roland Drum Map 1 and Drum Map 2 stay distinct, and kit changes
+    are synchronized between parts sharing a map. GM2 uses bank 120 for rhythm
+    and bank 121 for melodic operation. Yamaha part-mode SysEx can also switch
+    any part explicitly and remains authoritative. XG rhythm parts map
+    internally to the complete <code>127/0</code> drum bank.</li>
+    <li>In GS mode, documented Roland insertion effects with direct named XG
+    counterparts are translated onto the shared Yamaha variation bus. Roland
+    EFX switches become per-part variation sends, so several parts can share
+    the effect. Recognized messages are consumed after translation so
+    S-YXG50's partial GS handling cannot replace the selected effect. GTR Multi
+    3 translates its distortion or overdrive selection, drive, level, and
+    nearest supported EQ controls; its internal wah, chorus, and delay sections
+    are not translated. Unrecognized compound effects remain available to
+    S-YXG50 and are not replaced with an unrelated approximation.</li>
     <li>GM1 System On, GM2 System On, GS Reset, and XG System On clear retained
     routing and controller state. The wrapper explicitly restores supported
     private-engine controllers, including neutral values for CC71 through

@@ -34,11 +34,23 @@ engines where necessary so a bank transition cannot strand a held note.
 Channel 10 starts in rhythm mode after reset. In XG mode, a later melodic bank
 MSB releases that implicit default so channel 10 can carry pitched voices, and
 bank 127 restores rhythm operation. GM1 and GS bank selections preserve their
-channel-10 drum default and use the compatibility drum bank `120/0`, preserving
-the non-XG drum-note layout. GM2 also uses bank 120 for rhythm and bank 121 for
-melodic selections. Explicit Yamaha part-mode SysEx can switch any part between
-melodic and rhythm operation and remains authoritative over later bank changes.
-XG rhythm parts use the complete S-YXG2006LE drum bank `127/0` internally.
+channel-10 drum default and use S-YXG2006LE bank `120/0` when the selected kit
+exists; missing Roland kits remain on S-YXG50. Roland Drum Map 1 and Drum Map 2
+assignments are tracked separately, and kit changes are synchronized between
+parts sharing a map. GM2 uses bank 120 for rhythm and bank 121 for melodic
+selections. Explicit Yamaha part-mode SysEx can switch any part between melodic
+and rhythm operation and remains authoritative over later bank changes. XG
+rhythm parts use the complete S-YXG2006LE drum bank `127/0` internally.
+
+In GS mode, documented Roland insertion effects with direct named XG
+counterparts are translated onto the shared Yamaha variation bus. Per-part
+Roland EFX switches become variation sends, allowing the shared effect to reach
+multiple parts. Recognized messages are consumed after translation so
+S-YXG50's partial GS handling cannot replace the selected effect. GTR Multi 3
+translates its distortion or overdrive selection, drive, level, and nearest
+supported EQ controls; its internal wah, chorus, and delay sections are not
+translated. Unrecognized compound effects remain available to S-YXG50 and are
+not replaced with an unrelated approximation.
 
 GM1 System On, GM2 System On, GS Reset, and XG System On all clear retained
 routing and controller state. Because S-YXG2006LE cannot safely receive those
