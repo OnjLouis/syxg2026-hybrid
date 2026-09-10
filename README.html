@@ -31,6 +31,10 @@
 <body>
 <main>
   <h1>S-YXG2026 Hybrid</h1>
+  <h2>Package 0.1.1</h2>
+  <p>Enables signed updates for existing installations and adds the updater
+  scripts and version marker to the complete download. The synth engine binaries
+  and audio behaviour are unchanged by this packaging release.</p>
 
   <p>S-YXG2026 Hybrid is an experimental 32-bit VST2 instrument assembled for
   software-synth preservation research. It combines three generations of
@@ -149,14 +153,34 @@ syxg2006le-engine.bin
 sxgbnw6l.tbl
 sxgdat6l.tbl
 Sxgpvknl.vxd
-sxgsgknl.vxd</pre>
+sxgsgknl.vxd
+syxg2026-hybrid.version.json</pre>
 
-  <p>The first three files are produced by this project. The other six are
-  original Yamaha runtime files and are not distributed by the source project.
+  <p>The first three files and the version marker are produced by this project.
+  The other six are original Yamaha runtime files and are not distributed by the source project.
   A tester must provide them from software they are entitled to use. The
   compatible S-YXG50 and S-YXG2006LE VST binaries retain DLL contents but use
   <code>.bin</code> names so a host does not list the private child engines as
   additional selectable instruments.</p>
+
+  <h2>Updating</h2>
+
+  <p>Close Foobar2000, REAPER, VSTHost, and any other program using the synth,
+  then run <code>Update Yamaha Hybrids.cmd</code>. The updater can live beside
+  this product folder, inside it, or in a shared parent folder containing both
+  Yamaha hybrids. It searches no more than two folder levels and updates only
+  synths whose DLLs are already installed.</p>
+
+  <p>The updater checks stable GitHub releases, displays the release notes, and
+  asks before replacing anything. Signed metadata limits each release to the
+  known files for the detected product, and every downloaded file is checked
+  against its signed SHA-256 hash.</p>
+
+  <p>Before replacement, the current managed files are saved in one compressed
+  rollback ZIP outside all plug-in folders. Only the newest rollback is kept,
+  under <code>%LOCALAPPDATA%\Onj Research\Yamaha Hybrid Updater\syxg2026-hybrid\backups</code>.
+  A failed replacement is restored automatically, and unrelated files are not
+  changed.</p>
 
   <h2>Voice selection</h2>
 

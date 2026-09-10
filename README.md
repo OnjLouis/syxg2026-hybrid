@@ -1,5 +1,11 @@
 # S-YXG2026 Hybrid
 
+## Package 0.1.1
+
+Enables signed updates for existing installations and adds the updater scripts
+and version marker to the complete download. This packaging release leaves the
+synth engine binaries and audio behaviour unchanged.
+
 See [`README.html`](README.html) for the accessible user guide, runtime layout,
 current validation, and known limitation.
 
@@ -113,9 +119,31 @@ sxgbnw6l.tbl              user-supplied S-YXG2006LE bank table
 sxgdat6l.tbl              user-supplied S-YXG2006LE waveform/data table
 Sxgpvknl.vxd              user-supplied original PVL runtime
 sxgsgknl.vxd              user-supplied original SG runtime
+syxg2026-hybrid.version.json  updater product/version marker
 ```
 
 The Yamaha files must remain outside source control and public packages.
+
+## Updater
+
+`Update Yamaha Hybrids.cmd` launches the shared PowerShell updater. The pair
+may be placed in this product folder or in a common parent containing both
+hybrids. It searches at most two folder levels, detects existing installations
+by their unique wrapper DLLs, and never installs a missing synth.
+
+Stable GitHub release metadata is signed with a product-specific RSA key. The
+manifest restricts replacement to an allowlist, identifies the exact product,
+and supplies SHA-256 hashes for the externally hosted runtime ZIP and every
+managed file. The updater stages and verifies the complete package before
+changing the live folder. It displays release notes and requires confirmation
+unless explicitly invoked for unattended installation.
+
+Before replacement, managed files are stored in one rollback ZIP beneath
+`%LOCALAPPDATA%\Onj Research\Yamaha Hybrid Updater\syxg2026-hybrid\backups`.
+Only the newest rollback and two bounded logs are retained. Rollback DLLs are
+never left loose in a VST search path, unrelated files are preserved, and a
+partial replacement is restored automatically. Audio hosts must be closed so
+they do not lock the runtime files.
 
 ## Build
 
