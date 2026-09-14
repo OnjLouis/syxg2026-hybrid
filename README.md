@@ -1,10 +1,11 @@
 # S-YXG2026 Hybrid
 
-## Package 0.1.1
+## Package 0.1.2
 
-Enables signed updates for existing installations and adds the updater scripts
-and version marker to the complete download. This packaging release leaves the
-synth engine binaries and audio behaviour unchanged.
+Adds Yamaha MU Voice Map Select support. MU Basic selects S-YXG50 for basic
+bank `0/0`, while MU Native restores the normal automatic hybrid voice choice.
+MIDI files that send neither message retain the existing automatic routing
+without an audible change.
 
 See [`README.html`](README.html) for the accessible user guide, runtime layout,
 current validation, and known limitation.
