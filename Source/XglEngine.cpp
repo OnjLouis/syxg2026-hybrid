@@ -1,4 +1,5 @@
 #include "XglEngine.h"
+#include "MuVoiceMapSelector.h"
 #include "XgPartModes.h"
 #include "XglResetControllers.h"
 #include "XgVariationRouting.h"
@@ -193,6 +194,7 @@ public:
     void observeSysex(std::span<const std::uint8_t> sysex,
                       std::int32_t deltaFrames)
     {
+        (void)muVoiceMap.observe(sysex);
         const auto previousPart = activeInsertionPart();
         variationRouting.observe(sysex);
         if (const auto change = partModes.observe(sysex)) {
@@ -397,9 +399,12 @@ private:
     bool hasSelectedVoice(std::size_t partIndex,
                           const PartState& part) const noexcept
     {
-        return voiceMap.hasVoice(
-            partModes.effectiveBankMsb(partIndex, part.bankMsb),
-            partModes.effectiveBankLsb(partIndex, part.bankLsb), part.program);
+        const auto bankMsb = partModes.effectiveBankMsb(
+            partIndex, part.bankMsb);
+        const auto bankLsb = partModes.effectiveBankLsb(
+            partIndex, part.bankLsb);
+        return muVoiceMap.allows2006Voice(bankMsb, bankLsb)
+            && voiceMap.hasVoice(bankMsb, bankLsb, part.program);
     }
 
     static void queue(PartState& part, std::uint32_t message,
@@ -464,6 +469,7 @@ private:
     vst2::EntryPoint entry {};
     std::array<PartState, XglEngine::partCount> parts;
     XgPartModes partModes;
+    MuVoiceMapSelector muVoiceMap;
     XglVoiceMap voiceMap;
     XgVariationRouting variationRouting;
     std::vector<float> left;

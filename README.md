@@ -37,6 +37,14 @@ The wrapper parses `sxgbnw6l.tbl` to determine whether the selected bank and
 program exist in S-YXG2006LE. Defined note-ons are rendered by that part's
 2006LE instance. Undefined slots remain on S-YXG50. Releases reach both PCM
 engines where necessary so a bank transition cannot strand a held note.
+When a MIDI file sends no MU Voice Map Select message, this automatic hybrid
+choice remains unchanged. The standard MU Voice Map Select parameter
+`F0 43 1n 49 00 00 12 mm F7` is also observed: value `00` sends basic bank
+`0/0` voices to S-YXG50, while value `01` restores the normal hybrid choice.
+Variation banks, drum banks, VL/PVL, and SG are unaffected. The selected map
+persists across GM, GM2, GS, and XG resets, matching Yamaha's documented MU
+behaviour. Unsupported values are ignored.
+
 Channel 10 starts in rhythm mode after reset. In XG mode, a later melodic bank
 MSB releases that implicit default so channel 10 can carry pitched voices, and
 bank 127 restores rhythm operation. GM1 and GS bank selections preserve their

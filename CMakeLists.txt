@@ -17,6 +17,8 @@ add_library(SYXG2026Hybrid SHARED
     Source/MidiRouter.h
     Source/MidiSystemReset.cpp
     Source/MidiSystemReset.h
+    Source/MuVoiceMapSelector.cpp
+    Source/MuVoiceMapSelector.h
     Source/NativeSgClient.cpp
     Source/NativeSgClient.h
     Source/NativeVlClient.cpp
@@ -234,6 +236,17 @@ target_link_options(StreamingRateAdapterTests PRIVATE
     -static -static-libgcc -static-libstdc++
 )
 add_test(NAME StreamingRateAdapterTests COMMAND StreamingRateAdapterTests)
+
+add_executable(MuVoiceMapSelectorTests
+    Tests/MuVoiceMapSelectorTests.cpp
+    Source/MuVoiceMapSelector.cpp
+    Source/MuVoiceMapSelector.h
+)
+target_include_directories(MuVoiceMapSelectorTests PRIVATE Source)
+target_link_options(MuVoiceMapSelectorTests PRIVATE
+    -static -static-libgcc -static-libstdc++
+)
+add_test(NAME MuVoiceMapSelectorTests COMMAND MuVoiceMapSelectorTests)
 
 add_executable(XglVoiceMapTests
     Tests/XglVoiceMapTests.cpp

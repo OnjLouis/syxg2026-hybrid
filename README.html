@@ -190,6 +190,14 @@ syxg2026-hybrid.version.json</pre>
   and 97 continue to activate VL/PVL. Yamaha model <code>0x5D</code> SysEx
   activates SG.</p>
 
+  <p>If a MIDI file sends no MU Voice Map Select message, that automatic hybrid
+  choice remains unchanged. The standard parameter
+  <code>F0 43 1n 49 00 00 12 mm F7</code> is supported: value <code>00</code>
+  sends basic bank <code>0/0</code> voices to S-YXG50, while value
+  <code>01</code> restores the normal hybrid choice. Variation banks, drum
+  banks, VL/PVL, and SG are unaffected. The choice persists across GM, GM2,
+  GS, and XG resets. Unsupported values are ignored.</p>
+
   <p>Note releases are sent conservatively across PCM ownership transitions.
   This prevents a note started before a bank change from becoming stuck, while
   note-ons still have only one PCM owner. SG-owned note-ons bypass both PCM
