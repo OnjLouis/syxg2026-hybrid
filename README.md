@@ -1,5 +1,12 @@
 # S-YXG2026 Hybrid
 
+## Package 0.1.3
+
+Preserves S-YXG2006LE's native fallback for Yamaha panel banks `0/112` through
+`0/127`. This keeps DGX/PSR-era panel-voice MIDI on the newer source engine
+when an exact panel slot is absent from its compact table. Undefined ordinary
+XG variation slots still fall back to S-YXG50.
+
 ## Package 0.1.2
 
 Adds Yamaha MU Voice Map Select support. MU Basic selects S-YXG50 for basic
@@ -36,8 +43,11 @@ the closed Yamaha binary.
 
 The wrapper parses `sxgbnw6l.tbl` to determine whether the selected bank and
 program exist in S-YXG2006LE. Defined note-ons are rendered by that part's
-2006LE instance. Undefined slots remain on S-YXG50. Releases reach both PCM
-engines where necessary so a bank transition cannot strand a held note.
+2006LE instance. Undefined ordinary XG slots remain on S-YXG50. Defined Yamaha
+panel banks `0/112` through `0/127` stay on S-YXG2006LE even when an individual
+program slot is absent, preserving the original engine's native basic-voice
+fallback for DGX/PSR-era MIDI. Releases reach both PCM engines where necessary
+so a bank transition cannot strand a held note.
 When a MIDI file sends no MU Voice Map Select message, this automatic hybrid
 choice remains unchanged. The standard MU Voice Map Select parameter
 `F0 43 1n 49 00 00 12 mm F7` is also observed: value `00` sends basic bank

@@ -7,6 +7,12 @@
 #include <vector>
 
 namespace hybrid {
+namespace {
+
+constexpr std::uint8_t firstPanelBankLsb = 112;
+constexpr std::uint8_t lastPanelBankLsb = 127;
+
+} // namespace
 
 XglVoiceMap::XglVoiceMap(std::span<const std::uint8_t> table)
 {
@@ -40,6 +46,23 @@ bool XglVoiceMap::hasVoice(std::uint8_t bankMsb, std::uint8_t bankLsb,
         return false;
     return voices[static_cast<std::size_t>(bank) * programsPerBank + program]
         != missingVoice;
+}
+
+bool XglVoiceMap::shouldUse2006Engine(std::uint8_t bankMsb,
+                                     std::uint8_t bankLsb,
+                                     std::uint8_t program) const noexcept
+{
+    const auto bank = banks[static_cast<std::size_t>(bankMsb) * 128 + bankLsb];
+    if (bank == missingBank || bank >= compactBankCount)
+        return false;
+
+    // Yamaha keyboard panel banks rely on S-YXG2006LE's own basic-voice
+    // fallback when an exact panel slot is absent from its compact table.
+    if (bankMsb == 0 && bankLsb >= firstPanelBankLsb
+        && bankLsb <= lastPanelBankLsb) {
+        return true;
+    }
+    return hasVoice(bankMsb, bankLsb, program);
 }
 
 } // namespace hybrid

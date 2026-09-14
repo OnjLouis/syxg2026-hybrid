@@ -31,6 +31,13 @@
 <body>
 <main>
   <h1>S-YXG2026 Hybrid</h1>
+  <h2>Package 0.1.3</h2>
+  <p>Preserves S-YXG2006LE's native fallback for Yamaha panel banks
+  <code>0/112</code> through <code>0/127</code>. This keeps DGX/PSR-era
+  panel-voice MIDI on the newer source engine when an exact panel slot is absent
+  from its compact table. Undefined ordinary XG variation slots still fall
+  back to S-YXG50.</p>
+
   <h2>Package 0.1.2</h2>
   <p>Adds Yamaha MU Voice Map Select support. MU Basic selects S-YXG50 for
   basic bank <code>0/0</code>, while MU Native restores the normal automatic
@@ -75,7 +82,9 @@
     <li>All sixteen S-YXG2006LE instances are independent and operate faster
     than real time together on the development system.</li>
     <li>Voices present in S-YXG2006LE are selected from its bank table.</li>
-    <li>Missing S-YXG2006LE bank/program slots fall back to S-YXG50.</li>
+    <li>Missing ordinary XG bank/program slots fall back to S-YXG50. Defined
+    Yamaha panel banks <code>0/112</code> through <code>0/127</code> retain
+    S-YXG2006LE's native basic-voice fallback.</li>
     <li>Channel 10 starts in rhythm mode after reset. XG melodic banks release
     that implicit mode and bank 127 restores drums; GM1 and GS bank selections
     preserve the channel-10 drum default and use S-YXG2006LE bank
@@ -208,8 +217,11 @@ WINEPREFIX="$HOME/.wine-syxg" WINEARCH=wow64 wine /path/to/vst-host.exe</pre>
   <h2>Voice selection</h2>
 
   <p>The wrapper reads S-YXG2006LE's own compact bank map. A defined slot is
-  rendered by the newer source engine. An undefined slot remains on S-YXG50,
-  retaining voices omitted by the XG Lite product. Bank-select MSBs 33, 81,
+  rendered by the newer source engine. An undefined ordinary XG slot remains
+  on S-YXG50, retaining voices omitted by the XG Lite product. Defined Yamaha
+  panel banks <code>0/112</code> through <code>0/127</code> stay on S-YXG2006LE
+  when an individual program slot is absent, preserving the original engine's
+  native basic-voice fallback for DGX/PSR-era MIDI. Bank-select MSBs 33, 81,
   and 97 continue to activate VL/PVL. Yamaha model <code>0x5D</code> SysEx
   activates SG.</p>
 

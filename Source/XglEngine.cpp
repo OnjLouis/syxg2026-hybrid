@@ -404,7 +404,7 @@ private:
         const auto bankLsb = partModes.effectiveBankLsb(
             partIndex, part.bankLsb);
         return muVoiceMap.allows2006Voice(bankMsb, bankLsb)
-            && voiceMap.hasVoice(bankMsb, bankLsb, part.program);
+            && voiceMap.shouldUse2006Engine(bankMsb, bankLsb, part.program);
     }
 
     static void queue(PartState& part, std::uint32_t message,

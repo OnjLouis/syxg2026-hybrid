@@ -26,6 +26,9 @@ public:
     [[nodiscard]] bool hasVoice(std::uint8_t bankMsb,
                                 std::uint8_t bankLsb,
                                 std::uint8_t program) const noexcept;
+    [[nodiscard]] bool shouldUse2006Engine(std::uint8_t bankMsb,
+                                           std::uint8_t bankLsb,
+                                           std::uint8_t program) const noexcept;
 
 private:
     static constexpr std::uint8_t missingBank = 0xff;
