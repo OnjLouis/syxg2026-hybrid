@@ -126,6 +126,23 @@
     <li>Two simultaneous plugin instances render independently.</li>
   </ul>
 
+  <h2>Accessible editor</h2>
+
+  <p>The plug-in editor opens a native Windows dashboard with three pages:
+  live status, under-the-hood routing, and the original Yamaha editor. Status
+  uses standard named controls and a 16-channel report list that exposes
+  routing as <code>2006LE/XG50</code>, VL/PVL, or SG alongside bank, program,
+  note activity, controllers, pitch bend, and effect sends. It also reports
+  whether the 2006LE runtime and Yamaha effects bridge loaded. Its small engine
+  activity graphic is supplemental; the same values are always available in
+  text.</p>
+
+  <p>Use <kbd>Alt+S</kbd>, <kbd>Alt+U</kbd>, or <kbd>Alt+Y</kbd> for the three
+  pages, <kbd>F5</kbd> or <kbd>Alt+R</kbd> to refresh, and <kbd>Alt+C</kbd> to
+  copy a complete text report. Tab and Shift+Tab move through the controls,
+  and arrow keys switch among the page buttons. Live updates change rows in
+  place without rebuilding the list or moving focus.</p>
+
   <div class="important">
     <p><strong>Experimental limitation:</strong> ordinary bank, program,
     controller, pressure, pitch-bend, and note messages are mirrored into the

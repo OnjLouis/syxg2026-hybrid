@@ -26,6 +26,21 @@ S-YXG2026 Hybrid is a source-only 32-bit VST2 preservation project. It combines:
 The repository does not contain or distribute Yamaha binaries, tables, songs,
 presets, or firmware.
 
+## Accessible editor
+
+The plug-in editor opens a native Windows dashboard with three pages: live
+status, under-the-hood routing, and the original Yamaha editor. Status uses
+standard named controls and a 16-channel report list that exposes routing as
+`2006LE/XG50`, VL/PVL, or SG alongside bank, program, note activity,
+controllers, pitch bend, and effect sends. It also reports whether the 2006LE
+runtime and Yamaha effects bridge loaded. The small engine activity graphic is
+supplemental; the same values are always present in text.
+
+Use `Alt+S`, `Alt+U`, or `Alt+Y` for the three pages, `F5` or `Alt+R` to
+refresh, and `Alt+C` to copy a complete text report. Tab and Shift+Tab move
+through the controls, and arrow keys switch among the page buttons. Live
+updates change rows in place without rebuilding the list or moving focus.
+
 ## Preservation milestone
 
 This project is believed to be the first publicly documented modern Windows

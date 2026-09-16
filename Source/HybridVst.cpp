@@ -1,4 +1,6 @@
 #include "GsEffectTranslator.h"
+#include "HybridEditor.h"
+#include "HybridStatus.h"
 #include "MidiRouter.h"
 #include "MidiSystemReset.h"
 #include "MidiChannelSnapshot.h"
@@ -56,6 +58,18 @@ constexpr std::int32_t hybridUniqueId = 0x53324859; // "S2HY"
 constexpr std::int32_t hybridVendorVersion = 100;
 constexpr char hybridEffectName[] = "S-YXG2026 Hybrid";
 constexpr char hybridVendorName[] = "Onj Research";
+constexpr hybrid::HybridEditorConfig editorConfig {
+    L"SYXG2026HybridAccessibleEditor",
+    L"S-YXG2026 Hybrid",
+    L"2006LE/XG50",
+    L"2006LE",
+    L"1. SG claims note events for channels in its native route mask.\r\n"
+    L"2. Bank MSB 33, 81, or 97 selects VL/PVL.\r\n"
+    L"3. Voices present in the S-YXG2006LE map use the 2006LE engine.\r\n"
+    L"4. Unsupported voices and fallback MIDI continue to S-YXG50.\r\n"
+    L"5. 2006LE, VL, and SG dry, reverb, chorus, and variation buses enter "
+    L"S-YXG50 before Yamaha effects processing."
+};
 
 vst2::IntPtr writeVstString(void* destination, const char* text,
                             std::size_t capacity)
@@ -157,6 +171,8 @@ struct WrapperState {
     hybrid::MidiRouter router;
     hybrid::GsEffectTranslator gsEffectTranslator;
     hybrid::XgPartModes childPartModes;
+    hybrid::HybridStatus status;
+    std::unique_ptr<hybrid::HybridEditor> editor;
     std::array<VlSetupEvent, maxVlSetupEvents> vlSetupEvents {};
     std::size_t vlSetupEventCount {};
     std::array<std::uint8_t, maxVlSetupSysexBytes> vlSetupSysex {};
@@ -450,6 +466,8 @@ void disableVlVoice(WrapperState& wrapper, std::uint8_t voice,
     clearVlVoice(wrapper.vlVoices[voice]);
     wrapper.vlVoices[voice].disabled = true;
     wrapper.vlVoiceAllocator.release(voice);
+    wrapper.status.setVlWorkerState(
+        voice, hybrid::WorkerDisplayState::failed);
 }
 
 void resetVlVoices(WrapperState& wrapper)
@@ -459,6 +477,7 @@ void resetVlVoices(WrapperState& wrapper)
     for (auto& snapshot : wrapper.vlChannelSnapshots)
         snapshot.reset();
     wrapper.vlVoiceAllocator.reset();
+    wrapper.status.resetVlWorkers();
 }
 
 void clearSg(WrapperState& wrapper)
@@ -469,6 +488,8 @@ void clearSg(WrapperState& wrapper)
     wrapper.sg.started = false;
     wrapper.sg.disabled = false;
     wrapper.sg.client.reset();
+    wrapper.status.setSgRouteMask(0);
+    wrapper.status.setSgState(false, false);
 }
 
 void disableSg(WrapperState& wrapper, const char* context,
@@ -477,6 +498,7 @@ void disableSg(WrapperState& wrapper, const char* context,
     reportSgFailure(context, details);
     clearSg(wrapper);
     wrapper.sg.disabled = true;
+    wrapper.status.setSgState(false, true);
 }
 
 void resetVlPlaybackState(WrapperState& wrapper)
@@ -491,10 +513,12 @@ void resetVlPlaybackState(WrapperState& wrapper)
     for (auto& snapshot : wrapper.vlChannelSnapshots)
         snapshot.reset();
     wrapper.vlVoiceAllocator.reset();
+    wrapper.status.resetVlWorkers();
     wrapper.vlSetupHistoryFrozen = false;
     wrapper.sg.pendingCount = 0;
     wrapper.sg.pendingSysexSize = 0;
     wrapper.sg.routeMask = 0;
+    wrapper.status.setSgRouteMask(0);
     wrapper.sg.timelineFrame = nativeFrame(wrapper, wrapper.sgTimelineFrames);
     if (wrapper.sg.client == nullptr)
         wrapper.sgSetupHistoryFrozen = false;
@@ -513,6 +537,8 @@ hybrid::NativeVlClient* ensureVlVoice(WrapperState& wrapper,
     try {
         state.client = std::make_unique<hybrid::NativeVlClient>(
             wrapper.workerPath, wrapper.vxdPath, nativeSampleRate);
+        wrapper.status.setVlWorkerState(
+            voice, hybrid::WorkerDisplayState::loaded);
         return state.client.get();
     } catch (const std::exception& error) {
         disableVlVoice(wrapper, voice, "initialization failure", error.what());
@@ -532,6 +558,7 @@ hybrid::NativeSgClient* ensureSg(WrapperState& wrapper)
         wrapper.sg.client = std::make_unique<hybrid::NativeSgClient>(
             wrapper.sgWorkerPath, wrapper.sgVxdPath, nativeSampleRate);
         wrapper.sg.started = true;
+        wrapper.status.setSgState(true, false);
         return wrapper.sg.client.get();
     } catch (const std::exception& error) {
         disableSg(wrapper, "initialization failure", error.what());
@@ -551,6 +578,9 @@ void configureVl(WrapperState& wrapper, float sampleRate)
         && std::filesystem::is_regular_file(wrapper.workerPath);
     wrapper.sgAvailable = std::filesystem::is_regular_file(wrapper.sgVxdPath)
         && std::filesystem::is_regular_file(wrapper.sgWorkerPath);
+    wrapper.status.setAvailability(wrapper.vlAvailable, wrapper.sgAvailable);
+    wrapper.status.setSampleRate(static_cast<std::uint32_t>(
+        std::max(1.0f, std::round(sampleRate))));
     if (!wrapper.vlAvailable)
         resetVlVoices(wrapper);
     if (!wrapper.sgAvailable)
@@ -659,6 +689,24 @@ bool retainVlSysex(WrapperState& wrapper,
         static_cast<std::uint32_t>(bytes.size())
     };
     return true;
+}
+
+void activateNativeVlBulkChannel(WrapperState& wrapper)
+{
+    constexpr std::uint8_t channel = 0;
+    constexpr std::array<std::uint32_t, 3> activationMessages {
+        0x002100b0u, // Bank MSB 33
+        0x000020b0u, // Bank LSB 0
+        0x000000c0u, // Program 1
+    };
+    for (const auto message : activationMessages) {
+        wrapper.vlChannelSnapshots[channel].observe(message);
+        wrapper.status.observeShortMessage(message, true, false);
+        if (!wrapper.vlSetupHistoryFrozen
+            && !retainVlShort(wrapper, channel, message)) {
+            wrapper.vlSetupHistoryFrozen = true;
+        }
+    }
 }
 
 bool retainSgShort(WrapperState& wrapper, std::uint32_t message,
@@ -872,6 +920,23 @@ void retainChildEvent(WrapperState& wrapper, vst2::Event* event, bool forceNew)
     batch.events[batch.numEvents++] = event;
 }
 
+constexpr hybrid::ResetDisplayState displayReset(
+    hybrid::MidiSystemReset reset) noexcept
+{
+    switch (reset) {
+    case hybrid::MidiSystemReset::gm1:
+        return hybrid::ResetDisplayState::gm1;
+    case hybrid::MidiSystemReset::gm2:
+        return hybrid::ResetDisplayState::gm2;
+    case hybrid::MidiSystemReset::gs:
+        return hybrid::ResetDisplayState::gs;
+    case hybrid::MidiSystemReset::xg:
+        return hybrid::ResetDisplayState::xg;
+    default:
+        return hybrid::ResetDisplayState::none;
+    }
+}
+
 bool retainPartModeChange(WrapperState& wrapper,
                           const hybrid::XgPartModeChange& change,
                           std::int32_t deltaFrames, bool forceNew)
@@ -944,6 +1009,8 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
 {
     if (events == nullptr)
         return 0;
+    if (events->numEvents > 0)
+        wrapper.status.markMidiActivity();
     wrapper.syntheticPartModeEventCount = 0;
     wrapper.syntheticGsEffectEventCount = 0;
     const auto firstNewBatch = wrapper.childBatchCount;
@@ -992,9 +1059,11 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                         reportVlFailure("2006LE MIDI processing failure",
                                         error.what());
                         wrapper.xgl.reset();
+                        wrapper.status.setSupplementalEngineAvailable(false);
                     } catch (...) {
                         reportVlFailure("2006LE MIDI processing failure");
                         wrapper.xgl.reset();
+                        wrapper.status.setSupplementalEngineAvailable(false);
                     }
                 }
                 if (wrapper.sg.client == nullptr
@@ -1049,6 +1118,9 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                                     client->prepare();
                                     voice.prepared = true;
                                     voice.started = true;
+                                    wrapper.status.setVlWorkerState(
+                                        voiceIndex,
+                                        hybrid::WorkerDisplayState::active);
                                     voice.timelineFrame = nativeFrame(
                                         wrapper, wrapper.sgTimelineFrames);
                                     wrapper.vlSetupHistoryFrozen = true;
@@ -1138,6 +1210,10 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                             != hybrid::MidiDestination::vl;
                     }
                 }
+                const bool sgChannel = (wrapper.sg.routeMask
+                    & (std::uint32_t {1} << channel)) != 0;
+                wrapper.status.observeShortMessage(
+                    packed, wrapper.router.isVlChannel(channel), sgChannel);
             } else if (event != nullptr && event->type == 6) {
                 const auto* sysex = reinterpret_cast<const vst2::SysexEvent*>(event);
                 if (sysex->sysexDump != nullptr && sysex->dumpBytes > 0) {
@@ -1145,6 +1221,10 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                         reinterpret_cast<const std::uint8_t*>(sysex->sysexDump),
                         static_cast<std::size_t>(sysex->dumpBytes),
                     };
+                    if (hybrid::isVlNativeBulkDump(bytes)
+                        && wrapper.router.selectVlChannel(0)) {
+                        activateNativeVlBulkChannel(wrapper);
+                    }
                     const auto eventFrame = wrapper.sgTimelineFrames
                         + static_cast<std::uint64_t>(
                             std::max(0, sysex->deltaFrames));
@@ -1154,6 +1234,7 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                         wrapper.childPartModes.reset(systemReset);
                         wrapper.gsEffectTranslator.reset();
                         resetVlPlaybackState(wrapper);
+                        wrapper.status.reset(displayReset(systemReset));
                         clearVlSetup(wrapper);
                         if (wrapper.sg.client == nullptr)
                             clearSgSetup(wrapper);
@@ -1256,6 +1337,8 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                             hybrid::vlVoiceAssignment(bytes)) {
                         const auto voiceIndex = assignment->voice;
                         auto& voice = wrapper.vlVoices[voiceIndex];
+                        wrapper.status.configureVlWorker(
+                            voiceIndex, assignment->channel);
                         if (wrapper.vlVoiceAllocator.configureVoice(
                                 voiceIndex, assignment->channel)
                             && voice.started) {
@@ -1339,6 +1422,7 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
             wrapper.child, vst2::processEvents, 0, 0,
             &wrapper.childBatches[index], 0.0f);
     }
+    wrapper.status.publishShared();
     return result;
 }
 
@@ -1378,6 +1462,7 @@ bool renderXgl(WrapperState& wrapper, std::int32_t frames)
         reportVlFailure("2006LE audio rendering failure");
     }
     wrapper.xgl.reset();
+    wrapper.status.setSupplementalEngineAvailable(false);
     return false;
 }
 
@@ -1472,6 +1557,7 @@ void renderSg(WrapperState& wrapper, std::int32_t frames,
                     const auto routeMask = wrapper.sg.client->routeMask();
                     if (routeMask != wrapper.sg.routeMask) {
                         wrapper.sg.routeMask = routeMask;
+                        wrapper.status.setSgRouteMask(routeMask);
                         reportSgDiagnostic("configured", wrapper.sgAvailable,
                                            wrapper.sg.routeMask);
                     }
@@ -1507,6 +1593,7 @@ void renderSg(WrapperState& wrapper, std::int32_t frames,
                 const auto routeMask = wrapper.sg.client->routeMask();
                 if (routeMask != wrapper.sg.routeMask) {
                     wrapper.sg.routeMask = routeMask;
+                    wrapper.status.setSgRouteMask(routeMask);
                     reportSgDiagnostic("configured", wrapper.sgAvailable,
                                        wrapper.sg.routeMask);
                 }
@@ -1767,6 +1854,14 @@ vst2::IntPtr dispatch(vst2::AEffect* effect, std::int32_t opcode,
         return writeVstString(data, hybridEffectName, 64);
     if (opcode == vst2::getVendorVersion)
         return hybridVendorVersion;
+    if (opcode == vst2::editGetRect && wrapper->editor != nullptr)
+        return wrapper->editor->getRect(data);
+    if (opcode == vst2::editOpen && wrapper->editor != nullptr)
+        return wrapper->editor->open(data);
+    if (opcode == vst2::editClose && wrapper->editor != nullptr)
+        return wrapper->editor->close();
+    if (opcode == vst2::editIdle && wrapper->editor != nullptr)
+        return wrapper->editor->idle();
     if (opcode == vst2::processEvents)
         return processEvents(*wrapper, static_cast<const vst2::Events*>(data));
     if (opcode != vst2::close) {
@@ -1797,6 +1892,8 @@ vst2::IntPtr dispatch(vst2::AEffect* effect, std::int32_t opcode,
         return result;
     }
 
+    if (wrapper->editor != nullptr)
+        wrapper->editor->close();
     const auto result = wrapper->child->dispatcher(wrapper->child, opcode, index,
                                                    value, data, option);
     resetVlVoices(*wrapper);
@@ -1949,6 +2046,10 @@ extern "C" __declspec(dllexport) vst2::AEffect* VSTPluginMain(
         && std::filesystem::is_regular_file(workerPath);
     wrapperState->sgAvailable = std::filesystem::is_regular_file(sgVxdPath)
         && std::filesystem::is_regular_file(sgWorkerPath);
+    wrapperState->status.setAvailability(wrapperState->vlAvailable,
+                                         wrapperState->sgAvailable);
+    wrapperState->status.setSampleRate(static_cast<std::uint32_t>(
+        std::max(1.0f, std::round(initialRate))));
     if (std::filesystem::is_regular_file(xglEnginePath)
         && std::filesystem::is_regular_file(xglBankPath)
         && std::filesystem::is_regular_file(xglDataPath)) {
@@ -1977,6 +2078,12 @@ extern "C" __declspec(dllexport) vst2::AEffect* VSTPluginMain(
         static_cast<DWORD>(std::size(disableEffects))) != 0;
     wrapperState->xgEffectsBridgeAvailable = !effectsDisabled
         && hybrid::XgEffectsBridge::acquire(module);
+    wrapperState->status.setEffectsBridgeAvailable(
+        wrapperState->xgEffectsBridgeAvailable);
+    wrapperState->status.setSupplementalEngineAvailable(
+        wrapperState->xgl != nullptr);
+    wrapperState->editor = std::make_unique<hybrid::HybridEditor>(
+        self, child, wrapperState->status, editorConfig);
     *effect = *child;
     effect->dispatcher = dispatch;
     effect->process = process;
@@ -1985,5 +2092,6 @@ extern "C" __declspec(dllexport) vst2::AEffect* VSTPluginMain(
     effect->object = wrapperState;
     effect->processReplacing = processReplacing;
     effect->uniqueId = hybridUniqueId;
+    effect->flags |= vst2::hasEditorFlag;
     return effect;
 }
