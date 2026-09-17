@@ -41,3 +41,10 @@ Reset-message recognition and the explicit private-engine controller defaults
 are covered by focused regression tests. MU voice-map parsing, default hybrid
 selection, unsupported values, bank scope, and reset persistence are also
 covered by focused regression tests.
+
+Yamaha model `0x64` Plug-in Voice bulk transactions are assembled and applied
+at their transaction footer. The retained regression song changes through all
+26 embedded voices during one playback pass. VSTHost also confirms that the
+accessible status page follows the selected VL bank and program. Foobar2000
+MIDI Player can render ahead and open the editor against a separate idle
+instance, so its status page is not a reliable live-playback probe.

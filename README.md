@@ -1,5 +1,12 @@
 # S-YXG2026 Hybrid
 
+## Package 0.1.4
+
+Adds an accessible native editor and handles complete Yamaha model `0x64`
+Plug-in Voice bulk transactions. Songs can now load and change their embedded
+VL voices during playback, including the associated bank, program, volume,
+mono/poly, pitch-bend range, portamento, reverb, and chorus settings.
+
 ## Package 0.1.3
 
 Preserves S-YXG2006LE's native fallback for Yamaha panel banks `0/112` through
@@ -40,6 +47,12 @@ Use `Alt+S`, `Alt+U`, or `Alt+Y` for the three pages, `F5` or `Alt+R` to
 refresh, and `Alt+C` to copy a complete text report. Tab and Shift+Tab move
 through the controls, and arrow keys switch among the page buttons. Live
 updates change rows in place without rebuilding the list or moving focus.
+
+The status page describes the live plug-in instance owned by its host. VSTHost
+therefore exposes current channel activity. Foobar2000 MIDI Player may render a
+MIDI file ahead of playback and later open the editor on a new, idle instance;
+in that host the status page can consequently show defaults while Foobar2000 is
+playing its already-rendered audio.
 
 ## Preservation milestone
 
