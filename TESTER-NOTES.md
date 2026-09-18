@@ -5,6 +5,13 @@ and select `S-YXG2026 Hybrid` explicitly in the host while evaluating it.
 
 ## Focus areas
 
+Package 0.1.5 prepares all eight VL workers and the SG worker during plug-in
+activation on a serialized, below-normal-priority background thread. This
+removes the measured 40-150 ms worker construction from first-note processing.
+The full test suite, repeated activation/shutdown churn, exact VL and SG render
+hashes, and live Foobar2000 playback pass. One instance reserves approximately
+60-70 MB for its ready helpers; Foobar2000 may prebuffer several instances.
+
 1. Test ordinary GM and XG files at 44.1 and 48 kHz.
 2. Compare voices against both S-YXG2006LE and S-YXG50 where possible.
 3. Test bank changes, repeated notes, sustain, pitch bend, expression, pan, and

@@ -1,5 +1,14 @@
 # S-YXG2026 Hybrid
 
+## Package 0.1.5
+
+Prepares the eight VL helpers and the SG helper in a serialized, below-normal-
+priority background phase when the host activates the plug-in. This removes
+process creation and Yamaha-engine initialization from first-note MIDI
+processing. A single active plug-in instance reserves approximately 60-70 MB
+for its ready helpers; hosts that prebuffer more than one instance multiply
+that figure.
+
 ## Package 0.1.4
 
 Adds an accessible native editor and handles complete Yamaha model `0x64`
