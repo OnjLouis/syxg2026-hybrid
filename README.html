@@ -31,6 +31,14 @@
 <body>
 <main>
   <h1>S-YXG2026 Hybrid</h1>
+  <h2>Package 0.1.6</h2>
+  <p>Translates Roland GS Part Pitch Key Shift into MIDI Channel Coarse Tuning
+  for the isolated S-YXG2006LE source parts. This preserves GS per-part
+  transposition without using the original plug-in's unsafe SysEx entry path.
+  Roland device, model, command, address, value range, part mapping, and
+  checksum are validated before translation; unrelated and malformed messages
+  remain untouched.</p>
+
   <h2>Package 0.1.5</h2>
   <p>Prepares the eight VL helpers and the SG helper in a serialized,
   below-normal-priority background phase when the host activates the plug-in.
@@ -172,8 +180,8 @@
     VL/PVL, and SG still receive their established SysEx paths. MIDI files that
     configure unusual 2006LE part state exclusively through SysEx need further
     testing and may require explicit translation in the wrapper. XG rhythm-part
-    mode, system variation, and insertion variation routing are already
-    translated and supported.</p>
+    mode, system variation, insertion variation routing, and GS Part Pitch Key
+    Shift are already translated and supported.</p>
   </div>
 
   <h2>Real-time use</h2>

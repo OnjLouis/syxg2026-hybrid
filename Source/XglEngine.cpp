@@ -1,4 +1,5 @@
 #include "XglEngine.h"
+#include "GsPartPitch.h"
 #include "MuVoiceMapSelector.h"
 #include "XgPartModes.h"
 #include "XglResetControllers.h"
@@ -83,6 +84,8 @@ struct EventBatch {
     std::array<vst2::Event*, maxEventsPerPart> events {};
 };
 
+enum class ParameterSelection : std::uint8_t { none, rpn, nrpn };
+
 struct PartState {
     vst2::AEffect* effect {};
     std::vector<vst2::MidiEvent> pending;
@@ -96,6 +99,11 @@ struct PartState {
     std::uint8_t reverbSend { defaultReverbSend };
     std::uint8_t chorusSend {};
     std::uint8_t variationSend {};
+    ParameterSelection parameterSelection { ParameterSelection::none };
+    std::uint8_t rpnMsb { maximumControllerValue };
+    std::uint8_t rpnLsb { maximumControllerValue };
+    std::uint8_t nrpnMsb { maximumControllerValue };
+    std::uint8_t nrpnLsb { maximumControllerValue };
 };
 
 } // namespace
@@ -177,12 +185,18 @@ public:
             part.reverbSend = defaultReverbSend;
             part.chorusSend = 0;
             part.variationSend = 0;
+            part.parameterSelection = ParameterSelection::none;
+            part.rpnMsb = maximumControllerValue;
+            part.rpnLsb = maximumControllerValue;
+            part.nrpnMsb = maximumControllerValue;
+            part.nrpnLsb = maximumControllerValue;
             part.heldNotes.fill(0);
             part.pending.clear();
             queue(part, 0x000078b0u, 0);
             queue(part, 0x000079b0u, 0);
             for (const auto& reset : privateXglControllerResets)
                 queueController(part, reset.controller, reset.value, 0);
+            queueKeyShift(part, 64, 0);
             queueController(part, 0,
                             partModes.effectiveBankMsb(partIndex, 0), 0);
             queueController(part, 32,
@@ -197,6 +211,10 @@ public:
         (void)muVoiceMap.observe(sysex);
         const auto previousPart = activeInsertionPart();
         variationRouting.observe(sysex);
+        if (const auto keyShift = gsPartKeyShift(sysex)) {
+            queueKeyShift(parts[keyShift->part], keyShift->rpnCoarseTune,
+                          deltaFrames);
+        }
         if (const auto change = partModes.observe(sysex)) {
             auto& part = parts[change->part];
             queueController(part, 0, partModes.effectiveBankMsb(
@@ -255,6 +273,9 @@ public:
             part.expression = second;
         else if (op == 0xb0 && first == 121)
             part.expression = maximumControllerValue;
+
+        if (op == 0xb0)
+            observeParameterSelection(part, first, second);
 
         auto remapped = remapToPartZero(message);
         if (op == 0xb0 && first == 0) {
@@ -353,6 +374,66 @@ private:
             | (static_cast<std::uint32_t>(controller) << 8)
             | (static_cast<std::uint32_t>(value) << 16);
         queue(part, message, deltaFrames);
+    }
+
+    static void observeParameterSelection(PartState& part,
+                                          std::uint8_t controller,
+                                          std::uint8_t value) noexcept
+    {
+        switch (controller) {
+        case 101:
+            part.parameterSelection = ParameterSelection::rpn;
+            part.rpnMsb = value;
+            break;
+        case 100:
+            part.parameterSelection = ParameterSelection::rpn;
+            part.rpnLsb = value;
+            break;
+        case 99:
+            part.parameterSelection = ParameterSelection::nrpn;
+            part.nrpnMsb = value;
+            break;
+        case 98:
+            part.parameterSelection = ParameterSelection::nrpn;
+            part.nrpnLsb = value;
+            break;
+        default:
+            return;
+        }
+        if ((part.parameterSelection == ParameterSelection::rpn
+                && part.rpnMsb == maximumControllerValue
+                && part.rpnLsb == maximumControllerValue)
+            || (part.parameterSelection == ParameterSelection::nrpn
+                && part.nrpnMsb == maximumControllerValue
+                && part.nrpnLsb == maximumControllerValue)) {
+            part.parameterSelection = ParameterSelection::none;
+        }
+    }
+
+    static void restoreParameterSelection(PartState& part,
+                                          std::int32_t deltaFrames)
+    {
+        if (part.parameterSelection == ParameterSelection::rpn) {
+            queueController(part, 101, part.rpnMsb, deltaFrames);
+            queueController(part, 100, part.rpnLsb, deltaFrames);
+        } else if (part.parameterSelection == ParameterSelection::nrpn) {
+            queueController(part, 99, part.nrpnMsb, deltaFrames);
+            queueController(part, 98, part.nrpnLsb, deltaFrames);
+        } else {
+            queueController(part, 101, maximumControllerValue, deltaFrames);
+            queueController(part, 100, maximumControllerValue, deltaFrames);
+        }
+    }
+
+    static void queueKeyShift(PartState& part, std::uint8_t value,
+                              std::int32_t deltaFrames)
+    {
+        // GS Part Pitch Key Shift and MIDI RPN 0:2 share the same centre value
+        // and semitone scale, so this is lossless and avoids unsafe child SysEx.
+        queueController(part, 101, 0, deltaFrames);
+        queueController(part, 100, 2, deltaFrames);
+        queueController(part, 6, value, deltaFrames);
+        restoreParameterSelection(part, deltaFrames);
     }
 
     static void prepareInsertionInput(PartState& part,

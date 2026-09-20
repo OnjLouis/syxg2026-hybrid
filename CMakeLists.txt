@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(SYXG2026Hybrid VERSION 0.1.5 LANGUAGES CXX)
+project(SYXG2026Hybrid VERSION 0.1.6 LANGUAGES CXX)
 
 if(NOT WIN32 OR CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "S-YXG2026 Hybrid currently requires a 32-bit Windows target")
@@ -17,6 +17,8 @@ add_library(SYXG2026Hybrid SHARED
     Source/HybridStatus.h
     Source/GsEffectTranslator.cpp
     Source/GsEffectTranslator.h
+    Source/GsPartPitch.cpp
+    Source/GsPartPitch.h
     Source/MidiRouter.cpp
     Source/MidiRouter.h
     Source/MidiSystemReset.cpp
@@ -329,6 +331,17 @@ target_link_options(GsEffectTranslatorTests PRIVATE
     -static -static-libgcc -static-libstdc++
 )
 add_test(NAME GsEffectTranslatorTests COMMAND GsEffectTranslatorTests)
+
+add_executable(GsPartPitchTests
+    Tests/GsPartPitchTests.cpp
+    Source/GsPartPitch.cpp
+    Source/GsPartPitch.h
+)
+target_include_directories(GsPartPitchTests PRIVATE Source)
+target_link_options(GsPartPitchTests PRIVATE
+    -static -static-libgcc -static-libstdc++
+)
+add_test(NAME GsPartPitchTests COMMAND GsPartPitchTests)
 
 add_executable(HybridStatusTests
     Tests/HybridStatusTests.cpp

@@ -5,12 +5,11 @@ and select `S-YXG2026 Hybrid` explicitly in the host while evaluating it.
 
 ## Focus areas
 
-Package 0.1.5 prepares all eight VL workers and the SG worker during plug-in
-activation on a serialized, below-normal-priority background thread. This
-removes the measured 40-150 ms worker construction from first-note processing.
-The full test suite, repeated activation/shutdown churn, exact VL and SG render
-hashes, and live Foobar2000 playback pass. One instance reserves approximately
-60-70 MB for its ready helpers; Foobar2000 may prebuffer several instances.
+Package 0.1.6 translates checksum-valid Roland GS Part Pitch Key Shift messages
+into Channel Coarse Tuning for the affected isolated S-YXG2006LE source part.
+The retained `suplex.mid` regression requires Part 2 to sound one octave below
+the unshifted source. The translation must not alter other parts, corrupt the
+MIDI file's active RPN or NRPN selection, or react to malformed GS SysEx.
 
 1. Test ordinary GM and XG files at 44.1 and 48 kHz.
 2. Compare voices against both S-YXG2006LE and S-YXG50 where possible.
@@ -38,6 +37,9 @@ hashes, and live Foobar2000 playback pass. One instance reserves approximately
     `01` and confirm automatic hybrid selection returns. The chosen map must
     survive GM, GM2, GS, and XG resets without changing variation banks, drum
     banks, VL/PVL, or SG.
+11. Play a GS file that sets Part Pitch Key Shift, such as `suplex.mid`, and
+    compare it with S-YXG2006LE or S-YXG100 Hybrid. The affected part must use
+    the documented semitone offset while all unrelated parts remain unchanged.
 
 The current probes cover effects-bus injection, present and missing 2006LE
 slots, VL coexistence, sample-identical SG ownership, two simultaneous plugin
@@ -47,7 +49,9 @@ parameter.
 Reset-message recognition and the explicit private-engine controller defaults
 are covered by focused regression tests. MU voice-map parsing, default hybrid
 selection, unsupported values, bank scope, and reset persistence are also
-covered by focused regression tests.
+covered by focused regression tests. GS Part Pitch Key Shift parsing covers
+the retained Suplex message, multi-byte part data, checksum rejection,
+documented value bounds, unrelated parameters, and live child-engine output.
 
 Yamaha model `0x64` Plug-in Voice bulk transactions are assembled and applied
 at their transaction footer. The retained regression song changes through all
