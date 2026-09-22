@@ -31,6 +31,12 @@
 <body>
 <main>
   <h1>S-YXG2026 Hybrid</h1>
+  <h2>Package 0.1.7</h2>
+  <p>Corrects an SG startup memory error that could crash the singing worker
+  under Wine. The legacy one-slot setup now supplies the one-based slot number
+  expected by Yamaha's native helpers. The loaded image is checked before this
+  correction is applied, and the Yamaha file on disk remains unchanged.</p>
+
   <h2>Package 0.1.6</h2>
   <p>Translates Roland GS Part Pitch Key Shift into MIDI Channel Coarse Tuning
   for the isolated S-YXG2006LE source parts. This preserves GS per-part

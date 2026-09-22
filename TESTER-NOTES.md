@@ -5,6 +5,13 @@ and select `S-YXG2026 Hybrid` explicitly in the host while evaluating it.
 
 ## Focus areas
 
+Package 0.1.7 corrects an SG startup memory error exposed by Wine. Protected-
+memory tests reproduce the original crash at the reporters' instruction address
+and confirm that the corrected worker starts, renders, changes sample rate, and
+shuts down without the invalid access. Falcosoft 6.6 renders `SG_yuki.MID`
+through the corrected worker under Wine, and all retained SG demo excerpts keep
+their exact Windows and Wine sample hashes.
+
 Package 0.1.6 translates checksum-valid Roland GS Part Pitch Key Shift messages
 into Channel Coarse Tuning for the affected isolated S-YXG2006LE source part.
 The retained `suplex.mid` regression requires Part 2 to sound one octave below

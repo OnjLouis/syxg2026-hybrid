@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(SYXG2026Hybrid VERSION 0.1.6 LANGUAGES CXX)
+project(SYXG2026Hybrid VERSION 0.1.7 LANGUAGES CXX)
 
 if(NOT WIN32 OR CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "S-YXG2026 Hybrid currently requires a 32-bit Windows target")
@@ -142,6 +142,11 @@ target_link_options(HybridEditorHostProbe PRIVATE
 )
 
 enable_testing()
+
+add_executable(NativeSgStartupTests Tests/NativeSgStartupTests.cpp)
+target_include_directories(NativeSgStartupTests PRIVATE Source)
+target_link_options(NativeSgStartupTests PRIVATE -static -static-libgcc -static-libstdc++)
+add_test(NAME NativeSgStartupTests COMMAND NativeSgStartupTests)
 add_executable(MidiRouterTests
     Tests/MidiRouterTests.cpp
     Source/MidiRouter.cpp
