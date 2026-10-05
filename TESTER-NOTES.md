@@ -5,6 +5,14 @@ and select `S-YXG2026 Hybrid` explicitly in the host while evaluating it.
 
 ## Focus areas
 
+The 0.1.8-rc.1 editor test targets issue 3: disappearing controls under
+Wine 11.19 Staging with VSTHost 1.58 x64 and Bridge 1.13 on X11/XFCE.
+Follow EDITOR-TEST.html for installation, movement/playback tests and rollback.
+The 22 Windows tests pass, including focused invalidation, selection/focus,
+accessibility and editor resource checks. This is not confirmation that the
+reported Wine failure is fixed; direct 32-bit VSTHost remains the reporter's
+confirmed workaround. Audio/MIDI processing is unchanged.
+
 Package 0.1.7 corrects an SG startup memory error exposed by Wine. Protected-
 memory tests reproduce the original crash at the reporters' instruction address
 and confirm that the corrected worker starts, renders, changes sample rate, and

@@ -1,5 +1,19 @@
 # S-YXG2026 Hybrid
 
+## Editor Test 0.1.8-rc.1
+
+This opt-in prerelease limits recurring status and selection redraws to the
+activity graphic instead of invalidating the whole editor background. Native
+controls continue to redraw their own changing content. Audio and MIDI paths
+are unchanged. Windows tests pass; resolution of the Wine 11.19 bridged-host
+redraw issue is not yet confirmed. Stable release 0.1.7 remains available and
+the automatic updater ignores this prerelease.
+
+The code-only test download contains a replacement wrapper DLL, not a complete
+synth or any Yamaha runtime data. Read [the test instructions](EDITOR-TEST.html)
+before replacing the DLL in an existing installation. Leave its installed
+version marker unchanged so a later stable update can replace the test build.
+
 ## Package 0.1.7
 
 Corrects an SG startup memory error that could crash the singing worker under

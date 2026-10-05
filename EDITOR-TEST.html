@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S-YXG2026 Hybrid 0.1.8-rc.1 Editor Test</title>
+  <style>
+    body { max-width: 54rem; margin: auto; padding: 1.5rem;
+           color: #171717; background: white; font: 1rem/1.6 system-ui, sans-serif; }
+    h1, h2 { line-height: 1.25; }
+    code { font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>S-YXG2026 Hybrid 0.1.8-rc.1 Editor Test</h1>
+  <p>This is an opt-in test build, not a stable update. It is intended for
+  <a href="https://github.com/OnjLouis/syxg2026-hybrid/issues/3">issue 3</a>:
+  disappearing editor controls when moving the window or updating MIDI status
+  in a bridged Wine host. The reported setup is Wine 11.19 Staging,
+  VSTHost 1.58 x64, Bridge 1.13 and X11/XFCE.</p>
+  <h2>What Changed</h2>
+  <p>The status timer, idle refresh and channel-selection handling now invalidate
+  only the activity graphic. Native controls continue to repaint their changing
+  content. Full page-switch and layout redraws remain unchanged. Audio, MIDI,
+  worker behaviour and Yamaha runtime files are unchanged.</p>
+  <p>All 22 Windows tests pass, including keyboard/accessibility, focus and
+  selection retention, editor resource checks and a new repaint-region test.
+  Whether this resolves the reported Wine issue still needs your test results.
+  Moving or re-exposing the bridged window could independently hit Wine's
+  cross-process painting limitations.</p>
+  <h2>Install the Test</h2>
+  <ol>
+    <li>Close your audio host and its bridge processes before replacing files.</li>
+    <li>Keep a copy of the existing <code>syxg2026-hybrid.dll</code> outside
+    all plug-in scan folders, preferably in a ZIP. Do not leave two versions
+    of the DLL in a scanned folder.</li>
+    <li>Extract this download outside your plug-in scan folders. Copy only
+    its <code>syxg2026-hybrid.dll</code> over the existing DLL in a working
+    S-YXG2026 Hybrid installation.</li>
+    <li>Keep the existing Yamaha engines, tables, workers, settings and installed
+    <code>syxg2026-hybrid.version.json</code> unchanged. The version marker
+    bundled with this test identifies the download; do not copy it into the
+    installed folder, so a later stable update can replace this test build.</li>
+    <li>Restart the same host and select S-YXG2026 Hybrid. This is the same
+    plug-in identity, not a second instrument.</li>
+  </ol>
+  <p>This download contains our wrapper code only. It does not contain Yamaha
+  ROMs, engines, tables or a complete working synth. The normal updater skips
+  prereleases; stable 0.1.7 and normal complete download archives are unchanged.</p>
+  <h2>Checks to Report</h2>
+  <ol>
+    <li>Open the Status editor while stopped. Move it, cover it with another
+    window, and uncover it. Check whether buttons, summary and the full list
+    remain visible.</li>
+    <li>Play the same MIDI that reproduced the failure. Leave the editor open
+    through repeated live channel updates, then repeat the movement test.</li>
+    <li>Switch between Status, Under the hood and Yamaha editor. Minimize and
+    restore the host, then close and reopen the editor.</li>
+    <li>If controls disappear, note which operation triggered it and whether
+    Refresh/F5 restores them. Report whether the paint-message warnings still
+    occur; their presence alone does not mean the visual test failed.</li>
+    <li>Check that playback and ordinary keyboard navigation still behave as
+    before. Include host/bridge and Wine versions with your report.</li>
+  </ol>
+  <h2>Restore the Stable DLL</h2>
+  <p>Close the host and its bridge, restore your saved DLL over the candidate,
+  and restart. Because all other installed files remain untouched, this returns
+  the installation to its previous build. Direct 32-bit VSTHost is the
+  reporter-confirmed workaround if the bridged editor still fails.</p>
+</main>
+</body>
+</html>

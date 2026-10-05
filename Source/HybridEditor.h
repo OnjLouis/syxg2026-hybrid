@@ -56,6 +56,8 @@ private:
     void refreshChannels(const HybridStatusSnapshot& snapshot, bool force);
     void refreshActivity(const HybridStatusSnapshot& snapshot, bool force);
     void refreshRouting(const HybridStatusSnapshot& snapshot, bool force);
+    [[nodiscard]] RECT visualizationBounds() const noexcept;
+    void invalidateVisualization() noexcept;
     void paintVisualization(HDC deviceContext) noexcept;
     void copyReport();
     void moveFocus(HWND current, bool backwards) noexcept;

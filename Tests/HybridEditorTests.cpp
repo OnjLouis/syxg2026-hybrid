@@ -95,6 +95,26 @@ std::uint32_t message(std::uint8_t operation, std::uint8_t channel,
         | (static_cast<std::uint32_t>(data2) << 16);
 }
 
+void assertActivityOnlyInvalidation(HWND root, HWND toolbar, HWND activity)
+{
+    const auto region = CreateRectRgn(0, 0, 0, 0);
+    assert(region != nullptr);
+    assert(GetUpdateRgn(root, region, FALSE) != ERROR);
+    RECT toolbarBounds {};
+    GetWindowRect(toolbar, &toolbarBounds);
+    MapWindowPoints(nullptr, root,
+                    reinterpret_cast<POINT*>(&toolbarBounds), 2);
+    assert(!RectInRegion(region, &toolbarBounds));
+    RECT activityBounds {};
+    GetWindowRect(activity, &activityBounds);
+    MapWindowPoints(nullptr, root,
+                    reinterpret_cast<POINT*>(&activityBounds), 2);
+    assert(!RectInRegion(region, &activityBounds));
+    assert(PtInRegion(region, activityBounds.right + 16,
+                     activityBounds.top + 16));
+    DeleteObject(region);
+}
+
 } // namespace
 
 int main()
@@ -163,6 +183,13 @@ int main()
     assert(accessibleName(activity) == L"Selected channel details");
     assert(accessibleName(routing) == L"Routing and worker details");
 
+    RedrawWindow(root, nullptr, nullptr, RDW_VALIDATE | RDW_ALLCHILDREN);
+    editor.idle();
+    assertActivityOnlyInvalidation(root, statusButton, activity);
+    RedrawWindow(root, nullptr, nullptr, RDW_VALIDATE | RDW_ALLCHILDREN);
+    SendMessageW(root, WM_TIMER, 1, 0);
+    assertActivityOnlyInvalidation(root, statusButton, activity);
+
     status.observeShortMessage(message(0xb0, 2, 0, 33), true, false);
     status.observeShortMessage(message(0xc0, 2, 11), true, false);
     status.observeShortMessage(message(0xb0, 2, 2, 92), true, false);
@@ -179,10 +206,13 @@ int main()
 
     ListView_SetItemState(list, 2, LVIS_SELECTED | LVIS_FOCUSED,
                           LVIS_SELECTED | LVIS_FOCUSED);
+    assertActivityOnlyInvalidation(root, statusButton, activity);
     SetFocus(list);
     for (std::uint8_t value = 0; value < 100; ++value) {
+        RedrawWindow(root, nullptr, nullptr, RDW_VALIDATE | RDW_ALLCHILDREN);
         status.observeShortMessage(message(0xb0, 2, 2, value), true, false);
         editor.idle();
+        assertActivityOnlyInvalidation(root, statusButton, activity);
     }
     assert(GetFocus() == list);
     assert(ListView_GetNextItem(list, -1, LVNI_SELECTED) == 2);
@@ -195,12 +225,18 @@ int main()
     SendMessageW(statusButton, WM_KEYDOWN, VK_RIGHT, 0);
     assert(GetFocus() == routingButton);
     assert(!IsWindowVisible(list));
+    RedrawWindow(root, nullptr, nullptr, RDW_VALIDATE | RDW_ALLCHILDREN);
+    editor.idle();
+    assert(!GetUpdateRect(root, nullptr, FALSE));
     SendMessageW(routingButton, WM_SYSCHAR, L's', 0);
     assert(IsWindowVisible(list));
     SendMessageW(statusButton, WM_SYSCHAR, L'u', 0);
     assert(!IsWindowVisible(list));
     SendMessageW(routingButton, WM_SYSCHAR, L'y', 0);
     assert(IsWindowVisible(legacyControl));
+    RedrawWindow(root, nullptr, nullptr, RDW_VALIDATE | RDW_ALLCHILDREN);
+    editor.idle();
+    assert(!GetUpdateRect(root, nullptr, FALSE));
 
     const auto closeResult = editor.close();
     assert(closeResult == 1);

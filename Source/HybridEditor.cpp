@@ -292,7 +292,7 @@ LRESULT HybridEditor::handleMessage(HWND target, UINT message, WPARAM wParam,
         if (header != nullptr && header->hwndFrom == channelList
             && header->code == LVN_ITEMCHANGED) {
             refreshActivity(latestSnapshot, true);
-            InvalidateRect(window, nullptr, FALSE);
+            invalidateVisualization();
         }
         break;
     }
@@ -500,8 +500,7 @@ void HybridEditor::refresh(bool force)
     refreshChannels(latestSnapshot, force);
     refreshActivity(latestSnapshot, force);
     refreshRouting(latestSnapshot, force);
-    if (page == Page::status)
-        InvalidateRect(window, nullptr, FALSE);
+    invalidateVisualization();
 }
 
 void HybridEditor::refreshSummary(const HybridStatusSnapshot& snapshot,
@@ -629,6 +628,29 @@ void HybridEditor::refreshRouting(const HybridStatusSnapshot& snapshot,
     setWindowTextIfChanged(routingEdit, text.str(), previousRouting, force);
 }
 
+RECT HybridEditor::visualizationBounds() const noexcept
+{
+    if (page != Page::status || activityEdit == nullptr)
+        return {};
+    RECT client {};
+    GetClientRect(window, &client);
+    RECT activity {};
+    GetWindowRect(activityEdit, &activity);
+    MapWindowPoints(nullptr, window, reinterpret_cast<POINT*>(&activity), 2);
+    return {activity.right + 8, activity.top,
+            client.right - edge, activity.bottom};
+}
+
+void HybridEditor::invalidateVisualization() noexcept
+{
+    const auto bounds = visualizationBounds();
+    if (bounds.right <= bounds.left || bounds.bottom <= bounds.top)
+        return;
+    // Native controls invalidate themselves; do not repaint the whole bridged
+    // editor surface for each channel update.
+    InvalidateRect(window, &bounds, FALSE);
+}
+
 void HybridEditor::paintVisualization(HDC deviceContext) noexcept
 {
     RECT client {};
@@ -638,13 +660,7 @@ void HybridEditor::paintVisualization(HDC deviceContext) noexcept
     if (page != Page::status || activityEdit == nullptr)
         return;
 
-    RECT activity {};
-    GetWindowRect(activityEdit, &activity);
-    MapWindowPoints(nullptr, window, reinterpret_cast<POINT*>(&activity), 2);
-    RECT visual {
-        activity.right + 8, activity.top,
-        client.right - edge, activity.bottom
-    };
+    const auto visual = visualizationBounds();
     FillRect(deviceContext, &visual,
              reinterpret_cast<HBRUSH>(COLOR_BTNFACE + 1));
     FrameRect(deviceContext, &visual,
