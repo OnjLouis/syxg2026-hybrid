@@ -1,5 +1,15 @@
 # S-YXG2026 Hybrid tester notes
 
+## Current package: 0.1.8
+
+The fallback AWM engine now embeds an MU1000-derived conversion. Defined
+2006LE voices keep their precedence. No separate MU ROMs or conversion tools
+are needed. QWS and REAPER definitions use the Native map, with 2006LE overrides
+and VL/PVL/SG entries. Check voice selection, drum kits, sustained loops,
+VL/SG balance, and effect tails. Some multi-element voices and effects are
+approximated. The reported Wine bridged-host GUI issue remains unresolved.
+Read the HTML manual for attribution and the conversion licence notice.
+
 This is a source release candidate. Keep the existing S-YXG100 Hybrid installed
 and select `S-YXG2026 Hybrid` explicitly in the host while evaluating it.
 

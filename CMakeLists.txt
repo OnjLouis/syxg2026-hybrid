@@ -413,3 +413,9 @@ target_link_options(NativeWorkerPreloaderTests PRIVATE
 target_compile_options(NativeWorkerPreloaderTests PRIVATE -UNDEBUG)
 add_dependencies(NativeWorkerPreloaderTests NativeWorkerStub)
 add_test(NAME NativeWorkerPreloaderTests COMMAND NativeWorkerPreloaderTests)
+
+add_executable(MuEngineVoiceMapTests Tests/MuEngineVoiceMapTests.cpp)
+target_include_directories(MuEngineVoiceMapTests PRIVATE Source)
+target_compile_options(MuEngineVoiceMapTests PRIVATE -UNDEBUG)
+target_link_options(MuEngineVoiceMapTests PRIVATE -static)
+add_test(NAME MuEngineVoiceMapTests COMMAND MuEngineVoiceMapTests)

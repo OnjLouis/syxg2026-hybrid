@@ -3,6 +3,7 @@
 #include "HybridStatus.h"
 #include "MidiRouter.h"
 #include "MidiSystemReset.h"
+#include "MuEngineVoiceMap.h"
 #include "MidiChannelSnapshot.h"
 #include "NativeEventTimeline.h"
 #include "NativeSgClient.h"
@@ -63,12 +64,12 @@ constexpr char hybridVendorName[] = "Onj Research";
 constexpr hybrid::HybridEditorConfig editorConfig {
     L"SYXG2026HybridAccessibleEditor",
     L"S-YXG2026 Hybrid",
-    L"2006LE/XG50",
+    L"2006LE/MU-derived",
     L"2006LE",
     L"1. SG claims note events for channels in its native route mask.\r\n"
     L"2. Bank MSB 33, 81, or 97 selects VL/PVL.\r\n"
     L"3. Voices present in the S-YXG2006LE map use the 2006LE engine.\r\n"
-    L"4. Unsupported voices and fallback MIDI continue to S-YXG50.\r\n"
+    L"4. Unsupported voices use the supplied MU-derived AWM fallback.\r\n"
     L"5. 2006LE, VL, and SG dry, reverb, chorus, and variation buses enter "
     L"S-YXG50 before Yamaha effects processing."
 };
@@ -1315,6 +1316,7 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                         + static_cast<std::uint64_t>(
                             std::max(0, sysex->deltaFrames));
                     const auto systemReset = hybrid::classifySystemReset(bytes);
+                    (void)hybrid::applyMuEngineVoiceMap(wrapper.child, bytes);
                     if (systemReset != hybrid::MidiSystemReset::none) {
                         wrapper.router.reset();
                         wrapper.childPartModes.reset(systemReset);

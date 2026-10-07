@@ -1,13 +1,31 @@
 # S-YXG2026 Hybrid
 
-## Editor Test 0.1.8-rc.1
+## Package 0.1.8: MU-Derived Fallback
+
+Current complete packages replace the classic small S-YXG50 fallback sound set
+with MU1000-derived sounds converted by
+[NightFright2k19's SXG-Create-NF](https://github.com/NightFright2k19/SXG-Create-NF),
+based on Soundshock's SXG-Create. Supported 2006LE voices retain precedence;
+missing voices use the expanded AWM fallback. VL/PVL, SG, and the software
+XG effects path remain. Native is the default MU map; MU Voice Map Select
+also switches the converted engine's Native/Basic map. Complete packages include
+refreshed QWS and REAPER definitions, embedded wave data, and the signed updater.
+
+This is not MU hardware emulation. Some multi-element voices and unsupported
+effect types are approximated; conversion cannot promise hardware-identical
+sound. Mu2026 remains the separate firmware-emulation product. Yamaha binaries,
+ROMs, tables, and demonstration MIDI remain excluded from GitHub.
+Conversion credits and the BSD-3-Clause notice are in the HTML manual.
+Upstream revision: `596e23209cf9d08fb199769be8a9a2adf8b1e822`.
+
+## Earlier Editor Test 0.1.8-rc.1
 
 This opt-in prerelease limits recurring status and selection redraws to the
 activity graphic instead of invalidating the whole editor background. Native
 controls continue to redraw their own changing content. Audio and MIDI paths
 are unchanged. Windows tests pass; resolution of the Wine 11.19 bridged-host
-redraw issue is not yet confirmed. Stable release 0.1.7 remains available and
-the automatic updater ignores this prerelease.
+redraw issue was not resolved by this change. The same Windows-tested redraw
+restriction is retained; this release does not claim a Wine GUI fix.
 
 The code-only test download contains a replacement wrapper DLL, not a complete
 synth or any Yamaha runtime data. Read [the test instructions](EDITOR-TEST.html)
