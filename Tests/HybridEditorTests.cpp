@@ -254,6 +254,23 @@ int main()
            <= gdiBefore + 2);
     assert(GetGuiResources(GetCurrentProcess(), GR_USEROBJECTS)
            <= userBefore + 2);
+    hybrid::VoiceSourcePreference preference;
+    hybrid::HybridEditor mappingEditor(
+        GetModuleHandleW(nullptr), &child, status, editorConfig, &preference);
+    assert(mappingEditor.open(parent) == 1);
+    const auto mappingRoot = FindWindowExW(parent, nullptr, editorConfig.windowClassName, nullptr);
+    const auto combo = FindWindowExW(mappingRoot, nullptr, L"COMBOBOX", nullptr);
+    assert(combo != nullptr && SendMessageW(combo, CB_GETCOUNT, 0, 0) == 3);
+    SendMessageW(combo, WM_SYSCHAR, L'm', 0);
+    assert(GetFocus() == combo);
+    SendMessageW(combo, CB_SETCURSEL, 2, 0);
+    SendMessageW(mappingRoot, WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(combo), CBN_SELCHANGE),
+        reinterpret_cast<LPARAM>(combo));
+    assert(preference.get() == hybrid::VoiceSource::mu);
+    for (int i = 0; i < 100; ++i) mappingEditor.idle();
+    assert(GetFocus() == combo && SendMessageW(combo, CB_GETCURSEL, 0, 0) == 2);
+    assert(accessibleName(combo) == L"Voice mapping");
+    assert(mappingEditor.close() == 1);
     DestroyWindow(parent);
     return 0;
 }

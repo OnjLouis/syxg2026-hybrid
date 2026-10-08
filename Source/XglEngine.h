@@ -12,6 +12,9 @@
 
 namespace hybrid {
 
+class VoiceSourcePreference;
+class ConvertedMuVoiceMap;
+
 class XglEngine {
 public:
     static constexpr std::size_t partCount = 16;
@@ -28,6 +31,8 @@ public:
 
     void setSampleRate(float sampleRate);
     void setBlockSize(std::int32_t blockSize);
+    void setVoicePreference(const VoiceSourcePreference* preference) noexcept;
+    void setConvertedVoiceMap(const ConvertedMuVoiceMap* catalog) noexcept;
     void reset(MidiSystemReset system = MidiSystemReset::xg);
 
     // Returns true only when a note-on belongs to a voice rendered by 2006LE.

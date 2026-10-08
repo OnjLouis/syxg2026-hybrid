@@ -31,14 +31,39 @@
 <body>
 <main>
   <h1>S-YXG2026 Hybrid</h1>
-  <h2>Current package 0.1.8</h2>
+  <h2>Current package 0.1.9</h2>
   <p>MU-derived AWM voices replace the classic small fallback sound set.
   VL/PVL, SG, and existing software effects routing remain. S-YXG2026
   retains 2006LE precedence for its supported voices.</p>
+  <h2>Voice and drum mapping corrections</h2>
+  <p>This release corrects MU-exclusive MSB 48 sub-banks,
+  including Anathema, and preserves SFX drum bank 126 when a part has an
+  explicit rhythm assignment. The latter prevents SFX Techno Kit from being
+  mistaken for a standard drum kit. These changes require the matching
+  converted engine; an older engine retains its previous bank support.</p>
+  <h2>Experimental MU insertion compatibility</h2>
+  <p>This release can translate independent MU Effect 2
+  distortion (49/00) and overdrive (4A/00) assignments for external VL/PVL
+  audio and a single routed SG part. Each supported insertion uses a separate,
+  voice-free instance of the existing software XG DSP. The song's normal XG
+  reverb, chorus and variation remain unchanged, including system delay.</p>
+  <p>The private processor uses insertion connection, so the requested Dry/Wet
+  balance is honoured. Its own system-effect sends are disabled; the processed
+  output enters the song's existing sends once. No MU-matching gain trim is applied.</p>
+  <p>This is an approximation using XG algorithms, not the MU effects chip.
+  It does not add independent insertions to converted AWM or 2006LE voices.
+  Unsupported algorithms, effect-controller modulation, chained assignments
+  and inseparable multi-part SG routes remain bypassed. Worker pan and send
+  proportions are recovered over the existing 128-frame DSP quantum.
+  Distortion can increase peaks and require additional host headroom.
+  Listening tests confirm the restored FatPizz lead, but its balance differs
+  from MU firmware emulation. Hardware-identical timbre and level are not
+  claimed; no compensating limiter or shared gain change has been added.</p>
   <h2>MU-derived sound set</h2>
   <p>Complete packages now contain MU1000-derived voices and drum kits, converted
   for the lightweight S-YXG50 software engine. The converted tables and waves are
-  embedded in <code>syxg50-engine.bin</code>, which is approximately 84 MiB.
+  embedded in <code>syxg50-engine.bin</code>, which is approximately 87 MiB
+  with the extended banks included in this release.
   No separate MU ROMs, wave tables, Python, or conversion tools are needed to
   play it. Keep the entire VST folder together and load the Hybrid DLL.</p>
   <p>The software XG effects processor and recovered VL/PVL/SG workers remain.
@@ -60,6 +85,27 @@
   New instrument definitions are provided in the complete archive; copy those
   into QWS or REAPER separately when updating. No manual ROM swapping is needed.
   The GitHub source and release assets contain no Yamaha binaries or ROM data.</p>
+  <h2>Voice mapping preference</h2>
+  <p>The native editor's Voice mapping list (Alt+M) and the host's appended
+  Mapping parameter offer Automatic, 2006LE first, and MU first. This is a
+  global preference, not a per-channel selector. Automatic
+  preserves the existing engine selection. Explicit choices prefer that engine
+  only where the requested patch exists, falling back to the other engine for
+  gaps. VL/PVL and SG still have priority. A base-voice alias is not a distinct
+  MU patch: it does not hide a keyboard-only panel voice.</p>
+  <p>This choice is independent of MU Native/Basic Voice Map Select and
+  GM/GM2/GS/XG resets; those messages retain their established behavior.
+  The preference applies to new notes; held notes keep their original owner.
+  VST project chunks save it, and legacy unwrapped chunks load as Automatic.
+  Older plugin builds cannot read the new wrapped chunks. Hosts that create
+  separate configuration and playback instances must transfer plugin state;
+  changing an editor does not rewrite already cached audio.</p>
+  <p>A private experimental MIDI command can select it inside a song:</p>
+  <pre>F0 7D 53 48 4D 01 00 F7  Automatic
+F0 7D 53 48 4D 01 01 F7  2006LE first
+F0 7D 53 48 4D 01 02 F7  MU first</pre>
+  <p>This uses the experimental manufacturer ID 7D. It is a Hybrid command,
+  not a Yamaha hardware command. Only this exact protocol is accepted.</p>
   <h2>Conversion credits and licence</h2>
   <p>Thanks to Soundshock for SXG-Create, NightFright2k19 for
   <a href="https://github.com/NightFright2k19/SXG-Create-NF">SXG-Create-NF</a>,
@@ -179,7 +225,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre>
   <ul>
     <li>All sixteen S-YXG2006LE instances are independent and operate faster
     than real time together on the development system.</li>
-    <li>Voices present in S-YXG2006LE are selected from its bank table.</li>
+    <li>In Automatic mapping, voices present in S-YXG2006LE are selected
+    from its bank table. The optional preference changes source precedence
+    without changing MIDI bank addresses.</li>
     <li>Missing ordinary XG bank/program slots fall back to S-YXG50. Defined
     Yamaha panel banks <code>0/112</code> through <code>0/127</code> retain
     S-YXG2006LE's native basic-voice fallback.</li>
@@ -191,7 +239,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre>
     are synchronized between parts sharing a map. GM2 uses bank 120 for rhythm
     and bank 121 for melodic operation. Yamaha part-mode SysEx can also switch
     any part explicitly and remains authoritative. XG rhythm parts map
-    internally to the complete <code>127/0</code> drum bank.</li>
+    internally to <code>127/0</code> for standard kits, preserving
+    <code>126/0</code> for SFX kits.</li>
     <li>In GS mode, documented Roland insertion effects with direct named XG
     counterparts are translated onto the shared Yamaha variation bus. Roland
     EFX switches become per-part variation sends, so several parts can share
@@ -337,7 +386,7 @@ WINEPREFIX="$HOME/.wine-syxg" WINEARCH=wow64 wine /path/to/vst-host.exe</pre>
 
   <h2>Voice selection</h2>
 
-  <p>The wrapper reads S-YXG2006LE's own compact bank map. A defined slot is
+  <p>In Automatic mapping, the wrapper reads S-YXG2006LE's compact bank map. A defined slot is
   rendered by the newer source engine. An undefined ordinary XG slot remains
   on S-YXG50, retaining voices omitted by the XG Lite product. Defined Yamaha
   panel banks <code>0/112</code> through <code>0/127</code> stay on S-YXG2006LE

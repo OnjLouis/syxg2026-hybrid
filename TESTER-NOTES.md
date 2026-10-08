@@ -1,6 +1,16 @@
 # S-YXG2026 Hybrid tester notes
 
-## Current package: 0.1.8
+## Current package: 0.1.9
+
+This release restores converted MU-exclusive sub-banks (including Anathema),
+corrects SFX Techno Kit selection, and translates independent MU distortion
+and overdrive for external VL/PVL and a single routed SG part. The private
+processor honours Dry/Wet and feeds the song's system sends once.
+Please compare FatPizz's wind, kit, distorted lead and delay, then test your
+own midstream effect assignments at your normal sample rate and block size.
+Levels differ from Mu2026; use host headroom rather than expecting identical
+hardware DSP or loudness. Unsupported algorithms, chained assignments and
+multi-part SG insertion remain bypassed. The Wine editor issue remains open.
 
 The fallback AWM engine now embeds an MU1000-derived conversion. Defined
 2006LE voices keep their precedence. No separate MU ROMs or conversion tools

@@ -1,5 +1,27 @@
 # S-YXG2026 Hybrid
 
+## Version 0.1.9: Voice Mapping and Independent Insertions
+
+Independent MU Effect 2 distortion (49/00) and overdrive (4A/00) can
+be translated for external VL/PVL audio and a single routed SG part using
+separate voice-free software XG DSP instances. Normal XG reverb, chorus
+and variation, including system delay, are retained; MU DSP is not substituted.
+Private insertion connection preserves the requested Dry/Wet balance. Its own
+system sends are disabled; the processed output feeds the song's sends once.
+No additional gain trim is applied to imitate MU levels.
+This is an experimental compatibility feature, not hardware-equivalent MU
+effects. Distortion increases peaks and may require more host headroom.
+Converted AWM/2006LE insertion processing, other algorithms, effect-controller
+modulation, chained assignments and inseparable multi-part SG routes are not
+implemented. Pan/send proportions use the existing 128-frame DSP quantum.
+
+This release adds an optional Automatic/2006LE-first/MU-first mapping
+preference, an accessible editor control and a private experimental MIDI command.
+It also restores converted MSB 48 sub-banks and preserves SFX drum bank 126.
+The matching extended converted engine is required for the new sub-banks.
+See the HTML guide for saved-state compatibility and listening limitations.
+The selector is global, not per-channel; a per-channel selector remains future work.
+
 ## Package 0.1.8: MU-Derived Fallback
 
 Current complete packages replace the classic small S-YXG50 fallback sound set

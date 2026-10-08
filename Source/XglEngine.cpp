@@ -1,4 +1,6 @@
 #include "XglEngine.h"
+#include "VoiceSourcePreference.h"
+#include "ConvertedMuVoiceMap.h"
 #include "GsPartPitch.h"
 #include "MuVoiceMapSelector.h"
 #include "XgPartModes.h"
@@ -168,6 +170,16 @@ public:
             part.effect->dispatcher(part.effect, vst2::setBlockSize, 0,
                                     requestedSize, nullptr, 0.0f);
         }
+    }
+
+    void setConvertedVoiceMap(const ConvertedMuVoiceMap* catalog) noexcept
+    {
+        convertedCatalog = catalog;
+    }
+
+    void setVoicePreference(const VoiceSourcePreference* preference) noexcept
+    {
+        voicePreference = preference;
     }
 
     void reset(MidiSystemReset system = MidiSystemReset::xg)
@@ -484,8 +496,15 @@ private:
             partIndex, part.bankMsb);
         const auto bankLsb = partModes.effectiveBankLsb(
             partIndex, part.bankLsb);
-        return muVoiceMap.allows2006Voice(bankMsb, bankLsb)
-            && voiceMap.shouldUse2006Engine(bankMsb, bankLsb, part.program);
+        const bool keyboard = voiceMap.shouldUse2006Engine(
+            bankMsb, bankLsb, part.program);
+        const bool automaticChoice = muVoiceMap.allows2006Voice(bankMsb, bankLsb)
+            && keyboard;
+        const bool mu = convertedCatalog == nullptr || !convertedCatalog->valid()
+            || convertedCatalog->hasVoice(bankMsb, bankLsb, part.program,
+                muVoiceMap.mode() == MuVoiceMapMode::basic);
+        return voicePreference == nullptr ? automaticChoice
+            : voicePreference->use2006(keyboard, mu, automaticChoice);
     }
 
     static void queue(PartState& part, std::uint32_t message,
@@ -551,6 +570,8 @@ private:
     std::array<PartState, XglEngine::partCount> parts;
     XgPartModes partModes;
     MuVoiceMapSelector muVoiceMap;
+    const VoiceSourcePreference* voicePreference {};
+    const ConvertedMuVoiceMap* convertedCatalog {};
     XglVoiceMap voiceMap;
     XgVariationRouting variationRouting;
     std::vector<float> left;
@@ -570,6 +591,15 @@ XglEngine::XglEngine(const std::filesystem::path& enginePath,
 
 XglEngine::~XglEngine() = default;
 
+void XglEngine::setVoicePreference(const VoiceSourcePreference* preference) noexcept
+{
+    impl->setVoicePreference(preference);
+}
+
+void XglEngine::setConvertedVoiceMap(const ConvertedMuVoiceMap* catalog) noexcept
+{
+    impl->setConvertedVoiceMap(catalog);
+}
 void XglEngine::setSampleRate(float sampleRate)
 {
     impl->setSampleRate(sampleRate);

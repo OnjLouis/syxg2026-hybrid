@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(SYXG2026Hybrid VERSION 0.1.8 LANGUAGES CXX)
+project(SYXG2026Hybrid VERSION 0.1.9 LANGUAGES CXX)
 
 if(NOT WIN32 OR CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "S-YXG2026 Hybrid currently requires a 32-bit Windows target")
@@ -9,6 +9,18 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(MuExternalInsertionTests
+    Tests/MuExternalInsertionTests.cpp Source/MuExternalInsertions.cpp
+    Source/XgEffectsBridge.cpp)
+target_include_directories(MuExternalInsertionTests PRIVATE Source)
+target_link_options(MuExternalInsertionTests PRIVATE -static -static-libgcc -static-libstdc++)
+add_test(NAME MuExternalInsertionTests COMMAND MuExternalInsertionTests)
+
+# Run explicitly with a local runtime DLL; Yamaha data is not a test asset.
+add_executable(VoicePreferenceIntegrationProbe Tests/VoicePreferenceIntegrationProbe.cpp)
+target_include_directories(VoicePreferenceIntegrationProbe PRIVATE Source)
+target_link_options(VoicePreferenceIntegrationProbe PRIVATE -static -static-libgcc -static-libstdc++)
 
 add_library(SYXG2026Hybrid SHARED
     Source/HybridEditor.cpp
@@ -52,6 +64,7 @@ add_library(SYXG2026Hybrid SHARED
     Source/XglVoiceMap.cpp
     Source/XglVoiceMap.h
     Source/HybridVst.cpp
+    Source/MuExternalInsertions.cpp
     Source/Vst2Abi.h
     Source/exports.def
 )
@@ -142,6 +155,29 @@ target_link_options(HybridEditorHostProbe PRIVATE
 )
 
 enable_testing()
+
+add_executable(ConvertedFallbackRoutingProbe
+    Tests/ConvertedFallbackRoutingProbe.cpp
+    Source/MuVoiceMapSelector.cpp Source/XglEngine.cpp Source/GsPartPitch.cpp
+    Source/XglVoiceMap.cpp Source/XgPartModes.cpp Source/XgVariationRouting.cpp)
+target_include_directories(ConvertedFallbackRoutingProbe PRIVATE Source)
+target_compile_definitions(ConvertedFallbackRoutingProbe PRIVATE NOMINMAX)
+target_link_options(ConvertedFallbackRoutingProbe PRIVATE -static -static-libgcc -static-libstdc++)
+
+add_executable(ConvertedMuVoiceMapTests Tests/ConvertedMuVoiceMapTests.cpp)
+target_include_directories(ConvertedMuVoiceMapTests PRIVATE Source)
+target_link_options(ConvertedMuVoiceMapTests PRIVATE -static -static-libgcc -static-libstdc++)
+add_test(NAME ConvertedMuVoiceMapTests COMMAND ConvertedMuVoiceMapTests)
+
+add_executable(VoicePreferenceChunkTests Tests/VoicePreferenceChunkTests.cpp)
+target_include_directories(VoicePreferenceChunkTests PRIVATE Source)
+target_link_options(VoicePreferenceChunkTests PRIVATE -static -static-libgcc -static-libstdc++)
+add_test(NAME VoicePreferenceChunkTests COMMAND VoicePreferenceChunkTests)
+
+add_executable(VoiceSourcePreferenceTests Tests/VoiceSourcePreferenceTests.cpp)
+target_include_directories(VoiceSourcePreferenceTests PRIVATE Source)
+target_link_options(VoiceSourcePreferenceTests PRIVATE -static -static-libgcc -static-libstdc++)
+add_test(NAME VoiceSourcePreferenceTests COMMAND VoiceSourcePreferenceTests)
 
 add_executable(NativeSgStartupTests Tests/NativeSgStartupTests.cpp)
 target_include_directories(NativeSgStartupTests PRIVATE Source)

@@ -2,6 +2,7 @@
 
 #include "HybridStatus.h"
 #include "Vst2Abi.h"
+#include "VoiceSourcePreference.h"
 
 #include <windows.h>
 
@@ -22,7 +23,10 @@ struct HybridEditorConfig {
 class HybridEditor {
 public:
     HybridEditor(HINSTANCE instance, vst2::AEffect* child,
-                 HybridStatus& status, HybridEditorConfig config) noexcept;
+                 HybridStatus& status, HybridEditorConfig config,
+                 VoiceSourcePreference* preference = nullptr,
+                 vst2::AEffect* wrapper = nullptr,
+                 vst2::HostCallback host = nullptr) noexcept;
     ~HybridEditor();
 
     HybridEditor(const HybridEditor&) = delete;
@@ -82,6 +86,11 @@ private:
     HWND activityEdit {};
     HWND routingEdit {};
     HWND legacyPanel {};
+    HWND mappingLabel {};
+    HWND mappingCombo {};
+    VoiceSourcePreference* voicePreference {};
+    vst2::AEffect* wrapperEffect {};
+    vst2::HostCallback hostCallback {};
     HFONT controlFont {};
     IAccPropServices* accessibilityServices {};
     bool comInitialized {};

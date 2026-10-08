@@ -32,6 +32,7 @@ enum ControlId : int {
     activityId,
     routingId,
     legacyPanelId,
+    mappingId,
 };
 
 const wchar_t* engineName(DisplayEngine engine,
@@ -113,9 +114,13 @@ std::wstring unsignedValue(unsigned value)
 
 HybridEditor::HybridEditor(HINSTANCE instanceValue, vst2::AEffect* childValue,
                            HybridStatus& statusValue,
-                           HybridEditorConfig configValue) noexcept
+                           HybridEditorConfig configValue,
+                           VoiceSourcePreference* preference,
+                           vst2::AEffect* wrapper,
+                           vst2::HostCallback host) noexcept
     : instance(instanceValue), child(childValue), status(statusValue),
-      config(configValue)
+      config(configValue), voicePreference(preference),
+      wrapperEffect(wrapper), hostCallback(host)
 {
     int childWidth = 0;
     int childHeight = 0;
@@ -278,6 +283,17 @@ LRESULT HybridEditor::handleMessage(HWND target, UINT message, WPARAM wParam,
 {
     switch (message) {
     case WM_COMMAND:
+        if (LOWORD(wParam) == mappingId && HIWORD(wParam) == CBN_SELCHANGE
+            && voicePreference != nullptr) {
+            const auto selected = SendMessageW(mappingCombo, CB_GETCURSEL, 0, 0);
+            if (selected >= 0 && selected <= 2) {
+                voicePreference->set(static_cast<VoiceSource>(selected));
+                if (hostCallback != nullptr && wrapperEffect != nullptr)
+                    hostCallback(wrapperEffect, 0, wrapperEffect->numParams - 1,
+                        0, nullptr, static_cast<float>(selected) / 2.0f);
+            }
+            return 0;
+        }
         switch (LOWORD(wParam)) {
         case statusPageId: showPage(Page::status); return 0;
         case routingPageId: showPage(Page::routing); return 0;
@@ -377,6 +393,19 @@ void HybridEditor::createControls()
         0, 0, 0, 0, window, reinterpret_cast<HMENU>(legacyPanelId), instance,
         nullptr);
 
+    if (voicePreference != nullptr) {
+        mappingLabel = CreateWindowExW(0, L"STATIC", L"Voice &mapping:",
+            WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, window, nullptr, instance, nullptr);
+        mappingCombo = CreateWindowExW(0, L"COMBOBOX", L"",
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST,
+            0, 0, 0, 0, window, reinterpret_cast<HMENU>(mappingId), instance, nullptr);
+        for (const auto* label : {L"Automatic (existing routing)",
+                L"2006LE first; MU fallback", L"MU first; 2006LE fallback"})
+            SendMessageW(mappingCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(label));
+        SendMessageW(mappingCombo, WM_SETFONT, reinterpret_cast<WPARAM>(controlFont), TRUE);
+        SendMessageW(mappingLabel, WM_SETFONT, reinterpret_cast<WPARAM>(controlFont), TRUE);
+        SetWindowSubclass(mappingCombo, controlProcedure, 1, reinterpret_cast<DWORD_PTR>(this));
+    }
     const std::array<HWND, 10> controls {
         statusButton, routingButton, legacyButton, refreshButton, copyButton,
         summaryEdit, channelList, activityEdit, routingEdit, legacyPanel
@@ -400,6 +429,7 @@ void HybridEditor::createControls()
         setName(activityEdit, L"Selected channel details");
         setName(routingEdit, L"Routing and worker details");
         setName(legacyPanel, L"Yamaha legacy editor panel");
+        if (mappingCombo != nullptr) setName(mappingCombo, L"Voice mapping");
     }
 
     ListView_SetExtendedListViewStyle(
@@ -449,7 +479,12 @@ void HybridEditor::layoutControls(int width, int height) noexcept
     placeButton(refreshButton, 104);
     placeButton(copyButton, 104);
 
-    const int contentTop = toolbarHeight + 2;
+    if (mappingCombo != nullptr) {
+        MoveWindow(mappingLabel, edge, toolbarHeight + 7, 110, 24, TRUE);
+        MoveWindow(mappingCombo, edge + 112, toolbarHeight + 3,
+            std::max(180, std::min(420, width - 136)), 140, TRUE);
+    }
+    const int contentTop = toolbarHeight + 2 + (mappingCombo != nullptr ? 36 : 0);
     const int contentWidth = std::max(0, width - edge * 2);
     const int summaryHeight = 72;
     const int activityHeight = 104;
@@ -495,6 +530,11 @@ void HybridEditor::showPage(Page newPage) noexcept
 
 void HybridEditor::refresh(bool force)
 {
+    if (mappingCombo != nullptr && voicePreference != nullptr
+        && SendMessageW(mappingCombo, CB_GETCURSEL, 0, 0)
+            != static_cast<unsigned>(voicePreference->get()))
+        SendMessageW(mappingCombo, CB_SETCURSEL,
+            static_cast<unsigned>(voicePreference->get()), 0);
     latestSnapshot = status.displaySnapshot();
     refreshSummary(latestSnapshot, force);
     refreshChannels(latestSnapshot, force);
@@ -533,6 +573,8 @@ void HybridEditor::refreshSummary(const HybridStatusSnapshot& snapshot,
              << (snapshot.supplementalEngineAvailable
                      ? L"active" : L"unavailable");
     }
+    if (voicePreference != nullptr)
+        text << L". Editor-instance mapping: " << voicePreference->label();
     text
          << L". Sample rate: " << snapshot.sampleRate
          << L" Hz. Last reset: " << resetName(snapshot.lastReset) << L".";
@@ -762,6 +804,9 @@ bool HybridEditor::activateMnemonic(wchar_t character)
     case L'y': showPage(Page::legacy); return true;
     case L'r': refresh(true); SetFocus(refreshButton); return true;
     case L'c': copyReport(); SetFocus(copyButton); return true;
+    case L'm':
+        if (mappingCombo != nullptr) { SetFocus(mappingCombo); return true; }
+        return false;
     default: return false;
     }
 }
@@ -786,6 +831,8 @@ std::wstring HybridEditor::reportText(
         text << config.supplementalEngineName << L" runtime: "
              << yesNo(snapshot.supplementalEngineAvailable) << L"\r\n";
     }
+    if (voicePreference != nullptr)
+        text << L"Editor-instance mapping: " << voicePreference->label() << L"\r\n";
     text << L"Last reset: " << resetName(snapshot.lastReset) << L"\r\n\r\n";
     for (std::size_t index = 0; index < snapshot.channels.size(); ++index) {
         const auto& channel = snapshot.channels[index];
