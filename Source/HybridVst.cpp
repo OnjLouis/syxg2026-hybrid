@@ -5,6 +5,7 @@
 #include "HybridStatus.h"
 #include "MidiRouter.h"
 #include "MidiSystemReset.h"
+#include "MasterVolumeTimeline.h"
 #include "MuEngineVoiceMap.h"
 #include "MidiChannelSnapshot.h"
 #include "NativeEventTimeline.h"
@@ -220,6 +221,11 @@ struct WrapperState {
     std::array<hybrid::ipc::TimedMidiEvent, maxPendingVlEvents>
         vlTimedMidiScratch {};
     std::vector<float> vlOutputBuses;
+    hybrid::MasterVolumeTimeline masterVolume;
+    std::vector<float> masterVolumeGains;
+    hybrid::MasterVolumeTimeline vlMasterVolume;
+    std::vector<float> vlMasterVolumeGains;
+    std::uint64_t vlMasterVolumeFrame {};
     std::size_t vlOutputCapacityFrames {};
     std::vector<float> nativeOutputBuses;
     std::size_t nativeOutputCapacityFrames {};
@@ -256,6 +262,7 @@ void configureAudioBuffers(WrapperState& wrapper,
         / quantum * quantum;
     wrapper.vlOutputBuses.assign(
         wrapper.vlOutputCapacityFrames * nativeTransportBusCount, 0.0f);
+    wrapper.masterVolumeGains.assign(wrapper.vlOutputCapacityFrames, 1.0f);
 
     const auto hostRate = static_cast<std::uint32_t>(
         std::max(1.0f, std::round(wrapper.sampleRate)));
@@ -267,6 +274,7 @@ void configureAudioBuffers(WrapperState& wrapper,
         * (static_cast<double>(nativeSampleRate) / hostRate))) + 4;
     wrapper.nativeOutputBuses.assign(
         wrapper.nativeOutputCapacityFrames * nativeTransportBusCount, 0.0f);
+    wrapper.vlMasterVolumeGains.assign(wrapper.nativeOutputCapacityFrames, 1.0f);
     wrapper.xglOutputBuses.assign(
         wrapper.vlOutputCapacityFrames * hybrid::XglEngine::busCount, 0.0f);
 }
@@ -637,6 +645,7 @@ void configureVl(WrapperState& wrapper, float sampleRate)
     for (auto& voice : wrapper.vlVoices)
         voice.timelineFrame = nativeFrame(wrapper, wrapper.sgTimelineFrames);
     wrapper.sg.timelineFrame = nativeFrame(wrapper, wrapper.sgTimelineFrames);
+    wrapper.vlMasterVolumeFrame = nativeFrame(wrapper, wrapper.sgTimelineFrames);
 }
 
 std::uint32_t packedMessage(const vst2::MidiEvent& event)
@@ -1359,6 +1368,9 @@ vst2::IntPtr processEvents(WrapperState& wrapper, const vst2::Events* events)
                     const auto eventFrame = wrapper.sgTimelineFrames
                         + static_cast<std::uint64_t>(
                             std::max(0, sysex->deltaFrames));
+                    if (!wrapper.masterVolume.observe(bytes, eventFrame)
+                        || !wrapper.vlMasterVolume.observe(bytes, eventFrame))
+                        return 0;
                     const auto systemReset = hybrid::classifySystemReset(bytes);
                     if (systemReset != hybrid::MidiSystemReset::none)
                         wrapper.convertedBankRouter.reset();
@@ -1646,9 +1658,10 @@ void mixVlChannelBlock(WrapperState& wrapper, VlVoiceState& voice,
         auto* left = nativeBus(wrapper, busOffset + plane * 2);
         auto* right = nativeBus(wrapper, busOffset + plane * 2 + 1);
         for (std::uint32_t frame = 0; frame < frames; ++frame) {
-            left[outputOffset + frame] += stereo[frame * 2] * int16Scale;
+            const auto gain = wrapper.vlMasterVolumeGains[outputOffset + frame];
+            left[outputOffset + frame] += stereo[frame * 2] * int16Scale * gain;
             right[outputOffset + frame] += stereo[frame * 2 + 1]
-                * int16Scale;
+                * int16Scale * gain;
         }
     }
 }
@@ -1807,6 +1820,14 @@ bool renderNativeAudio(WrapperState& wrapper, std::int32_t frames,
     for (std::size_t bus = 0; bus < nativeTransportBusCount; ++bus) {
         std::fill_n(nativeBus(wrapper, bus), frames, 0.0f);
     }
+    const auto hostRate = static_cast<std::uint32_t>(
+        std::max(1.0f, std::round(wrapper.sampleRate)));
+    for (std::int32_t frame = 0; frame < frames; ++frame) {
+        const auto hostFrame = (wrapper.vlMasterVolumeFrame + frame)
+            * hostRate / nativeSampleRate;
+        wrapper.vlMasterVolumeGains[frame] = wrapper.vlMasterVolume.gainAt(hostFrame);
+    }
+    wrapper.vlMasterVolumeFrame += static_cast<std::uint64_t>(frames);
     std::int32_t outputOffset = 0;
     while (outputOffset < frames) {
         const auto block = static_cast<std::uint32_t>(
@@ -1931,6 +1952,17 @@ bool xgRenderWindow(const WrapperState& wrapper, std::int32_t frames,
         <= wrapper.vlOutputCapacityFrames;
 }
 
+void prepareMasterVolume(WrapperState& wrapper, std::int32_t frames,
+                         std::int32_t cachedPrefix) noexcept
+{
+    const auto count = std::min<std::size_t>(std::max(0, frames),
+                                           wrapper.masterVolumeGains.size());
+    const auto start = wrapper.sgTimelineFrames
+        + static_cast<std::uint64_t>(std::max(0, cachedPrefix));
+    for (std::size_t frame = 0; frame < count; ++frame)
+        wrapper.masterVolumeGains[frame] = wrapper.masterVolume.gainAt(start + frame);
+}
+
 void mixVlDry(WrapperState& wrapper, float** outputs, std::int32_t frames)
 {
     if (outputs == nullptr || outputs[0] == nullptr || outputs[1] == nullptr)
@@ -1952,8 +1984,8 @@ void mixXglDry(WrapperState& wrapper, float** outputs, std::int32_t frames)
     const auto* left = xglBus(wrapper, dryLeft);
     const auto* right = xglBus(wrapper, dryRight);
     for (std::int32_t frame = 0; frame < frames; ++frame) {
-        outputs[0][frame] += left[frame];
-        outputs[1][frame] += right[frame];
+        outputs[0][frame] += left[frame] * wrapper.masterVolumeGains[frame];
+        outputs[1][frame] += right[frame] * wrapper.masterVolumeGains[frame];
     }
 }
 
@@ -2017,7 +2049,8 @@ void injectVlBuses(void* context, float* buses,
             auto* destination = buses
                 + destinationBus * hybrid::XgEffectsBridge::busStrideFrames;
             for (std::size_t frame = 0; frame < count; ++frame) {
-                destination[frame] += source[frame] * xgInternalBusScale;
+                destination[frame] += source[frame] * xgInternalBusScale
+                    * wrapper.masterVolumeGains[sourceOffset + frame];
             }
         };
         mixXglBus(dryLeft, 0);
@@ -2168,6 +2201,8 @@ void process(vst2::AEffect* effect, float** inputs, float** outputs,
         : renderVl(wrapper, frames, 0);
     const auto renderedXgl = renderXgl(
         wrapper, useEffects ? generatedFrames : frames);
+    prepareMasterVolume(wrapper, useEffects ? generatedFrames : frames,
+                        useEffects ? cachedPrefix : 0);
     wrapper.vlEffectsCursor = 0;
     if (useEffects && generatedFrames != 0)
         hybrid::XgEffectsBridge::beginBlock(&wrapper, injectVlBuses);
@@ -2197,6 +2232,8 @@ void processReplacing(vst2::AEffect* effect, float** inputs, float** outputs,
         : renderVl(wrapper, frames, 0);
     const auto renderedXgl = renderXgl(
         wrapper, useEffects ? generatedFrames : frames);
+    prepareMasterVolume(wrapper, useEffects ? generatedFrames : frames,
+                        useEffects ? cachedPrefix : 0);
     wrapper.vlEffectsCursor = 0;
     if (useEffects && generatedFrames != 0)
         hybrid::XgEffectsBridge::beginBlock(&wrapper, injectVlBuses);

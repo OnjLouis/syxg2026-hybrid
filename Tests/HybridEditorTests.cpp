@@ -270,6 +270,19 @@ int main()
     for (int i = 0; i < 100; ++i) mappingEditor.idle();
     assert(GetFocus() == combo && SendMessageW(combo, CB_GETCURSEL, 0, 0) == 2);
     assert(accessibleName(combo) == L"Voice mapping");
+    SendMessageW(combo, CB_SHOWDROPDOWN, TRUE, 0);
+    assert(SendMessageW(combo, CB_GETDROPPEDSTATE, 0, 0));
+    // A highlight is not committed yet; neither timer nor host refresh may
+    // replace it with the previously saved parameter while the list is open.
+    SendMessageW(combo, CB_SETCURSEL, 1, 0);
+    for (int i = 0; i < 10; ++i) mappingEditor.idle();
+    assert(SendMessageW(combo, CB_GETCURSEL, 0, 0) == 1);
+    preference.set(hybrid::VoiceSource::automatic);
+    SendMessageW(mappingRoot, WM_TIMER, 1, 0);
+    assert(SendMessageW(combo, CB_GETCURSEL, 0, 0) == 1);
+    SendMessageW(combo, CB_SHOWDROPDOWN, FALSE, 0);
+    mappingEditor.idle();
+    assert(SendMessageW(combo, CB_GETCURSEL, 0, 0) == 0);
     assert(mappingEditor.close() == 1);
     DestroyWindow(parent);
     return 0;

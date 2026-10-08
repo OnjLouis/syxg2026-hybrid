@@ -28,6 +28,7 @@ constexpr std::uint8_t defaultVolume = 100;
 constexpr std::uint8_t centerPan = 64;
 constexpr std::uint8_t maximumControllerValue = 127;
 constexpr std::uint8_t defaultReverbSend = 40;
+constexpr std::uint8_t receiveNoteMessagesAddress = 0x35;
 // S-YXG2006LE applies constant-power centre attenuation before exposing its
 // stereo output. S-YXG50 insertion effects receive the source before pan.
 constexpr float insertionPrePanGain = 1.41421356237f;
@@ -92,6 +93,7 @@ struct PartState {
     vst2::AEffect* effect {};
     std::vector<vst2::MidiEvent> pending;
     std::array<std::uint8_t, 128> heldNotes {};
+    bool receiveNotes { true };
     std::uint8_t bankMsb {};
     std::uint8_t bankLsb {};
     std::uint8_t program {};
@@ -203,6 +205,7 @@ public:
             part.nrpnMsb = maximumControllerValue;
             part.nrpnLsb = maximumControllerValue;
             part.heldNotes.fill(0);
+            part.receiveNotes = true;
             part.pending.clear();
             queue(part, 0x000078b0u, 0);
             queue(part, 0x000079b0u, 0);
@@ -220,6 +223,18 @@ public:
     void observeSysex(std::span<const std::uint8_t> sysex,
                       std::int32_t deltaFrames)
     {
+        if (sysex.size() >= 9 && sysex.front() == 0xf0
+            && sysex.back() == 0xf7 && sysex[1] == 0x43
+            && (sysex[2] & 0xf0) == 0x10 && sysex[3] == 0x4c
+            && sysex[4] == 0x08 && sysex[5] < parts.size()
+            && sysex[6] <= receiveNoteMessagesAddress
+            && std::all_of(sysex.begin() + 1, sysex.end() - 1,
+                           [](auto byte) { return byte < 0x80; })) {
+            const auto dataIndex = std::size_t { 7 }
+                + receiveNoteMessagesAddress - sysex[6];
+            if (dataIndex + 1 < sysex.size() && sysex[dataIndex] <= 1)
+                parts[sysex[5]].receiveNotes = sysex[dataIndex] != 0;
+        }
         (void)muVoiceMap.observe(sysex);
         const auto previousPart = activeInsertionPart();
         variationRouting.observe(sysex);
@@ -321,7 +336,7 @@ public:
         }
 
         if (isNoteOn(message)) {
-            if (!hasSelectedVoice(partIndex, part))
+            if (!part.receiveNotes || !hasSelectedVoice(partIndex, part))
                 return false;
             if (part.heldNotes[first] != 0xff)
                 ++part.heldNotes[first];
@@ -329,6 +344,7 @@ public:
             return true;
         }
         if (isNoteOff(message)) {
+            // Disabling reception must not strand a note we already own.
             if (part.heldNotes[first] == 0)
                 return false;
             --part.heldNotes[first];

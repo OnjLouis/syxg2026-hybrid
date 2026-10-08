@@ -531,6 +531,7 @@ void HybridEditor::showPage(Page newPage) noexcept
 void HybridEditor::refresh(bool force)
 {
     if (mappingCombo != nullptr && voicePreference != nullptr
+        && !SendMessageW(mappingCombo, CB_GETDROPPEDSTATE, 0, 0)
         && SendMessageW(mappingCombo, CB_GETCURSEL, 0, 0)
             != static_cast<unsigned>(voicePreference->get()))
         SendMessageW(mappingCombo, CB_SETCURSEL,

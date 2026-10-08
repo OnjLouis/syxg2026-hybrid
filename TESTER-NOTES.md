@@ -1,8 +1,15 @@
 # S-YXG2026 Hybrid tester notes
 
-## Current package: 0.1.9
+## Current package: 0.1.10
 
-This release restores converted MU-exclusive sub-banks (including Anathema),
+This update makes VL/PVL and 2006LE follow master-volume fades, while leaving
+SG's native master handling unchanged. Test FatPizz's closing fade and Jingle/
+Amazing in 2006LE-first mode: the disabled-part piano should be absent.
+Open the native Voice mapping dropdown and select each option; background
+refresh should no longer overwrite the highlighted choice while it is open.
+Hardware-exact fade curves and a Wine editor fix are not claimed.
+
+The preceding release restores converted MU-exclusive sub-banks (including Anathema),
 corrects SFX Techno Kit selection, and translates independent MU distortion
 and overdrive for external VL/PVL and a single routed SG part. The private
 processor honours Dry/Wet and feeds the song's system sends once.

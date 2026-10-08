@@ -31,7 +31,11 @@
 <body>
 <main>
   <h1>S-YXG2026 Hybrid</h1>
-  <h2>Current package 0.1.9</h2>
+  <h2>Current package 0.1.10</h2>
+  <p>This update corrects VL/PVL and 2006LE master-volume fades, respects
+  disabled 2006LE parts, and prevents refresh from overriding a choice while
+  the native mapping dropdown is open. SG retains its native volume handling;
+  full-volume gain, saved mapping state and natural effects tails are unchanged.</p>
   <p>MU-derived AWM voices replace the classic small fallback sound set.
   VL/PVL, SG, and existing software effects routing remain. S-YXG2026
   retains 2006LE precedence for its supported voices.</p>
@@ -85,6 +89,18 @@
   New instrument definitions are provided in the complete archive; copy those
   into QWS or REAPER separately when updating. No manual ROM swapping is needed.
   The GitHub source and release assets contain no Yamaha binaries or ROM data.</p>
+  <h2>Master volume and note reception</h2>
+  <p>XG Master Volume and Universal Real-Time Master Volume also control the
+  added VL/PVL and 2006LE audio. Fades therefore include those voices, rather
+  than only the original XG backing. Full master volume does not add gain.
+  SG keeps its own native master-volume handling and is not attenuated twice.
+  Effects retain their natural tails. The external sources use a power-law
+  envelope; Yamaha's quantized native envelope may differ at
+  intermediate levels. This is not a claim of bit-identical hardware behaviour.</p>
+  <p>The 2006LE path also honours XG per-part Receive Note Messages, including
+  packed parameter writes. Disabled parts do not start new notes; system reset
+  restores reception. Note-offs still release notes previously owned by that
+  engine, so changing this setting cannot strand a held note.</p>
   <h2>Voice mapping preference</h2>
   <p>The native editor's Voice mapping list (Alt+M) and the host's appended
   Mapping parameter offer Automatic, 2006LE first, and MU first. This is a

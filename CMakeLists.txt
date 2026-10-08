@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(SYXG2026Hybrid VERSION 0.1.9 LANGUAGES CXX)
+project(SYXG2026Hybrid VERSION 0.1.10 LANGUAGES CXX)
 
 if(NOT WIN32 OR CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "S-YXG2026 Hybrid currently requires a 32-bit Windows target")
@@ -455,3 +455,9 @@ target_include_directories(MuEngineVoiceMapTests PRIVATE Source)
 target_compile_options(MuEngineVoiceMapTests PRIVATE -UNDEBUG)
 target_link_options(MuEngineVoiceMapTests PRIVATE -static)
 add_test(NAME MuEngineVoiceMapTests COMMAND MuEngineVoiceMapTests)
+
+add_executable(MasterVolumeTimelineTests Tests/MasterVolumeTimelineTests.cpp Source/MidiSystemReset.cpp)
+target_include_directories(MasterVolumeTimelineTests PRIVATE Source)
+target_compile_options(MasterVolumeTimelineTests PRIVATE -UNDEBUG)
+target_link_options(MasterVolumeTimelineTests PRIVATE -static)
+add_test(NAME MasterVolumeTimelineTests COMMAND MasterVolumeTimelineTests)

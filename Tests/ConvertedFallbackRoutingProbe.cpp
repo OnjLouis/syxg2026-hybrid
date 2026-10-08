@@ -34,5 +34,27 @@ int main(int argc, char** argv) {
     engine.observeSysex(partMode,0);
     engine.queueShort(0x007e00b8,0); engine.queueShort(0x0010c8,0);
     expect(!engine.queueShort(0x00642698,0), "SFX Techno kit does not become 2006 Rock kit");
+    engine.reset();
+    preference.set(hybrid::VoiceSource::keyboard2006);
+    const std::array<std::uint8_t,9> receiveOff {0xf0,0x43,0x10,0x4c,8,11,0x35,0,0xf7};
+    auto receiveOn = receiveOff;
+    receiveOn[7] = 1;
+    engine.observeSysex(receiveOff,0);
+    expect(!engine.queueShort(0x00643c9b,0), "disabled part 12 does not own a 2006 note");
+    expect(engine.queueShort(0x00643c90,0), "part 12 mute does not mute part 1");
+    engine.observeSysex(receiveOn,0);
+    expect(engine.queueShort(0x00643c9b,0), "re-enabled part 12 owns notes again");
+    engine.observeSysex(receiveOff,0);
+    engine.queueShort(0x00003c8b,0);
+    engine.reset();
+    expect(engine.queueShort(0x00643c9b,0), "system reset restores note reception");
+    auto malformed = receiveOff;
+    malformed[8] = 0;
+    engine.observeSysex(malformed,0);
+    expect(engine.queueShort(0x00643d9b,0), "unterminated SysEx cannot mute a part");
+    const std::array<std::uint8_t,10> packedReceiveOff {0xf0,0x43,0x10,0x4c,8,4,0x34,0,0,0xf7};
+    engine.observeSysex(packedReceiveOff,0);
+    expect(!engine.queueShort(0x00643c94,0), "packed parameter write disables part 5");
+    expect(engine.queueShort(0x00643e9b,0), "part 5 mute leaves part 12 enabled");
     return failures ? 1 : 0;
 }

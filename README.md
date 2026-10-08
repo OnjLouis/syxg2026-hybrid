@@ -1,5 +1,23 @@
 # S-YXG2026 Hybrid
 
+## Version 0.1.10: Fades, Note Reception and Mapping Control
+
+XG and Universal Real-Time Master Volume now affect the external VL/PVL
+and 2006LE audio at the correct MIDI event time. FatPizz's closing VL lead
+and pizzicato fade with the backing. SG keeps its own native volume handling;
+full-volume gain and natural effects tails are unchanged. The external fade
+uses a power-law envelope, not Yamaha's exact quantized voice-volume curve.
+
+2006LE now honours XG per-part Receive Note Messages, including packed
+parameter writes. This removes the unwanted disabled-part piano in Jingle
+and Amazing when using 2006LE first. Reset restores note reception, and
+note-offs still release previously owned notes safely.
+
+The native mapping dropdown no longer has its highlighted choice replaced
+by host/timer refresh while open. The existing host Mapping parameter and
+saved-state format are unchanged. MU effects translation and Wine editor
+limitations remain as documented below.
+
 ## Version 0.1.9: Voice Mapping and Independent Insertions
 
 Independent MU Effect 2 distortion (49/00) and overdrive (4A/00) can
