@@ -1,13 +1,13 @@
 # S-YXG2026 Hybrid tester notes
 
-## Current package: 0.1.10
+## Current package: 0.1.11
 
-This update makes VL/PVL and 2006LE follow master-volume fades, while leaving
-SG's native master handling unchanged. Test FatPizz's closing fade and Jingle/
-Amazing in 2006LE-first mode: the disabled-part piano should be absent.
-Open the native Voice mapping dropdown and select each option; background
-refresh should no longer overwrite the highlighted choice while it is open.
-Hardware-exact fade curves and a Wine editor fix are not claimed.
+This update preserves native voice edits when a VL/PVL worker starts later
+in a song. Compare Timeless's closing lead: CC11 should retain Volume
+Expression Mode without the previous timbre/level jumps. Intentional later
+program changes still reload presets normally. Full-volume gain, SG, 2006LE,
+effects, mapping state and master-volume handling are unchanged. The separate
+Falcosoft-on-Wine fade report is not claimed fixed.
 
 The preceding release restores converted MU-exclusive sub-banks (including Anathema),
 corrects SFX Techno Kit selection, and translates independent MU distortion
@@ -27,7 +27,7 @@ VL/SG balance, and effect tails. Some multi-element voices and effects are
 approximated. The reported Wine bridged-host GUI issue remains unresolved.
 Read the HTML manual for attribution and the conversion licence notice.
 
-This is a source release candidate. Keep the existing S-YXG100 Hybrid installed
+This is a working preservation build. Keep the existing S-YXG100 Hybrid installed
 and select `S-YXG2026 Hybrid` explicitly in the host while evaluating it.
 
 ## Focus areas
