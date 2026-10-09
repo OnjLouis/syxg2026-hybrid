@@ -396,6 +396,13 @@ WINEPREFIX="$HOME/.wine-syxg" WINEARCH=wow64 wine /path/to/vst-host.exe</pre>
 
   <h2>Updating</h2>
 
+  <p>Linux users can run <code>sh ./Update-YamahaHybrids.sh</code> without
+  PowerShell or Wine. Keep the accompanying Python script and product/key JSON
+  together. Python 3.9+ and OpenSSL are required. See the
+  <a href="Linux-Updater.html">Linux updater guide</a> for signed verification,
+  commands, rollback and platform limits. This updater-only addition does not
+  change the synth version or audio.</p>
+
   <p>Close Foobar2000, REAPER, VSTHost, and any other program using the synth,
   then run <code>Update Yamaha Hybrids.cmd</code>. The updater can live beside
   this product folder, inside it, or in a shared parent folder containing both
@@ -414,6 +421,12 @@ WINEPREFIX="$HOME/.wine-syxg" WINEARCH=wow64 wine /path/to/vst-host.exe</pre>
   changed.</p>
 
   <h2>Voice selection</h2>
+
+  <p>For Falcosoft MIDI Player VST output, a missing master-volume fade can be
+  caused by Device settings, Mixer, <strong>Use Sysex for Volume/Balance</strong>.
+  Disable that checkbox, keep MIDI-file SysEx enabled, and replay from the
+  beginning. Controlled Falcosoft 6.6 tests and the reporter's Wine retest
+  confirmed the original volume messages and fade return.</p>
 
   <p>In Automatic mapping, the wrapper reads S-YXG2006LE's compact bank map. A defined slot is
   rendered by the newer source engine. An undefined ordinary XG slot remains

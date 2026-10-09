@@ -1,5 +1,14 @@
 # S-YXG2026 Hybrid
 
+## Native Linux Updater 1.2.0
+
+Run `sh ./Update-YamahaHybrids.sh` with its Python script and product/key JSON
+alongside it. Python 3.9+ and OpenSSL are required; PowerShell and Wine are not
+needed for updating. See [Linux-Updater.html](Linux-Updater.html). The separate
+updater release does not change synth audio or version. Stable signed synth
+updates, unrelated-file preservation and compressed rollback were tested on
+Linux for all three families. Existing Windows update manifests stay compatible.
+
 ## Version 0.1.11: Preserve Native VL Voice Edits
 
 Late-starting VL/PVL workers now replay bank/program selection and native
@@ -12,7 +21,10 @@ are unchanged.
 
 Setup history remains bounded; capacity exhaustion uses the existing current
 voice snapshot fallback. This does not correct a host that omits SysEx.
-The separate Falcosoft-on-Wine fade report remains under investigation.
+The separate Falcosoft fade report was traced to the host's
+Use Sysex for Volume/Balance checkbox. Disable it for VST output, keep
+MIDI-file SysEx enabled, and replay from the beginning. The reporter confirmed
+that this restores the fade; no additional synth patch was necessary.
 
 ## Version 0.1.10: Fades, Note Reception and Mapping Control
 
