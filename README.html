@@ -31,7 +31,12 @@
 <body>
 <main>
   <h1>S-YXG2026 Hybrid</h1>
-  <h2>Current package 0.1.11</h2>
+  <h2>Current package 0.1.12</h2>
+  <p>Reset-free MIDI files now keep channel 10 as drums when selecting bank zero.
+  Startup no longer assumes an XG reset has already arrived. Explicit XG resets
+  still permit melodic channel 10; other reset modes, gains and effects are
+  unchanged. This fixes a general startup case, not a filename-specific rule.</p>
+  <h2>Package 0.1.11</h2>
   <p>This update preserves native VL voice edits when a worker first starts
   later in a song. Timeless's closing volume-expression fade no longer
   reverts to breath-controlled timbre or jumps in level. Full-volume gain,
@@ -260,7 +265,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre>
     <li>Missing ordinary XG bank/program slots fall back to S-YXG50. Defined
     Yamaha panel banks <code>0/112</code> through <code>0/127</code> retain
     S-YXG2006LE's native basic-voice fallback.</li>
-    <li>Channel 10 starts in rhythm mode after reset. XG melodic banks release
+    <li>Before any system reset, GM-style defaults keep channel 10 as drums even
+    with ordinary bank-zero selections. Channel 10 starts in rhythm mode after
+    reset. XG melodic banks release
     that implicit mode and bank 127 restores drums; GM1 and GS bank selections
     preserve the channel-10 drum default and use S-YXG2006LE bank
     <code>120/0</code> when the selected kit exists; missing Roland kits remain

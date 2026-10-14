@@ -20,7 +20,19 @@ void expect(bool condition, const char* message)
 
 int main()
 {
+    {
+        hybrid::XgPartModes startup;
+        expect(!startup.selectBankMsb(9, 0) && startup.isRhythm(9),
+               "without a system reset, bank zero keeps channel 10 as drums");
+        expect(!startup.isRhythm(0),
+               "reset-free startup keeps other channels melodic");
+        startup.reset(hybrid::MidiSystemReset::xg);
+        const auto melodic = startup.selectBankMsb(9, 0);
+        expect(melodic && !startup.isRhythm(9),
+               "an explicit XG reset still permits melodic channel 10");
+    }
     hybrid::XgPartModes modes;
+    modes.reset(hybrid::MidiSystemReset::xg);
     expect(modes.isRhythm(9), "channel 10 defaults to rhythm");
     expect(!modes.isRhythm(5), "other channels default to melodic");
     expect(modes.effectiveBankMsb(9, 0) == 127,

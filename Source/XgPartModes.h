@@ -23,7 +23,8 @@ public:
     static constexpr std::uint8_t gm2RhythmBankMsb = 120;
     static constexpr std::uint8_t gm2MelodicBankMsb = 121;
 
-    XgPartModes() noexcept { reset(); }
+    // Reset-free GM files keep channel 10 as drums even when selecting bank 0.
+    XgPartModes() noexcept { reset(MidiSystemReset::gm1); }
 
     void reset(MidiSystemReset system = MidiSystemReset::xg) noexcept;
     [[nodiscard]] std::optional<XgPartModeChange> observe(

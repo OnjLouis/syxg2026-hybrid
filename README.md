@@ -1,5 +1,13 @@
 # S-YXG2026 Hybrid
 
+## Version 0.1.12: Reset-Free MIDI Drums
+
+Files without a GM, GS or XG reset now retain the normal channel-10 drum
+default when sending bank-zero selections. Startup no longer assumes that
+an XG reset has already arrived. Explicit XG resets still permit melodic
+channel 10; explicit part modes, other resets, gains and effects are unchanged.
+The fix applies generally, not only to the reported DirectX diagnostic MIDI.
+
 ## Native Linux Updater 1.2.0
 
 Run `sh ./Update-YamahaHybrids.sh` with its Python script and product/key JSON
@@ -206,6 +214,8 @@ Variation banks, drum banks, VL/PVL, and SG are unaffected. The selected map
 persists across GM, GM2, GS, and XG resets, matching Yamaha's documented MU
 behaviour. Unsupported values are ignored.
 
+Before any system reset is received, GM-style defaults preserve channel 10
+as drums even when a file sends ordinary bank-zero selections.
 Channel 10 starts in rhythm mode after reset. In XG mode, a later melodic bank
 MSB releases that implicit default so channel 10 can carry pitched voices, and
 bank 127 restores rhythm operation. GM1 and GS bank selections preserve their

@@ -12,7 +12,7 @@ param(
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$UpdaterVersion = [version]"1.1.0"
+$UpdaterVersion = [version]"1.1.1"
 $MaximumMetadataBytes = 1MB
 $MaximumPackageBytes = 100MB
 $MaximumExtractedBytes = 150MB
@@ -83,7 +83,7 @@ $Products = @(
     }
 )
 
-$AllowedProductFiles = @("README.html", "TESTER-NOTES.md", "Mu2026 Hybrid.ini", "Mu2026 Hybrid.reabank")
+$AllowedProductFiles = @("README.html", "TESTER-NOTES.md", "Mu2026 Hybrid.ini", "inst_mu2026_hybrid.ini", "Mu2026 Hybrid.reabank")
 $AllowedUpdaterFiles = @("Update Yamaha Hybrids.cmd", "Update-YamahaHybrids.ps1")
 $ScriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)) "Onj Research\Yamaha Hybrid Updater"
